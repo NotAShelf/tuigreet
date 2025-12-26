@@ -2,3 +2,8 @@
 /contrib/man/*.roff
 
 .vscode/
+
+# Nix
+/.nixos-test-history
+/result*
+/.direnv
