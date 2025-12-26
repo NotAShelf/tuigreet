@@ -12,7 +12,7 @@ use crate::{
 };
 
 pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn Error>> {
-  let size = f.size();
+  let size = f.area();
 
   let width = greeter.width();
   let height: u16 = get_height(greeter) + 1;

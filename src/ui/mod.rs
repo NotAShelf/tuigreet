@@ -56,7 +56,7 @@ where
   terminal.draw(|f| {
     let theme = &greeter.theme;
 
-    let size = f.size();
+    let size = f.area();
     let chunks = Layout::default()
       .constraints(
         [
@@ -138,7 +138,7 @@ where
 
     if !hide_cursor {
       if let Some(cursor) = cursor {
-        f.set_cursor(cursor.0 - 1, cursor.1 - 1);
+        f.set_cursor_position((cursor.0 - 1, cursor.1 - 1));
       }
     }
   })?;

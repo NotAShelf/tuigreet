@@ -105,7 +105,7 @@ pub fn get_cursor_offset(greeter: &mut Greeter, length: usize) -> i16 {
   offset
 }
 
-pub fn get_greeting_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<Paragraph>, u16) {
+pub fn get_greeting_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<Paragraph<'_>>, u16) {
   if let Some(greeting) = &greeter.greeting {
     let width = greeter.width();
 
@@ -123,7 +123,7 @@ pub fn get_greeting_height(greeter: &Greeter, padding: u16, fallback: u16) -> (O
   }
 }
 
-pub fn get_message_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<Paragraph>, u16) {
+pub fn get_message_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<Paragraph<'_>>, u16) {
   if let Some(message) = &greeter.message {
     let width = greeter.width();
     let paragraph = Paragraph::new(message.trim_end()).wrap(Wrap { trim: true });

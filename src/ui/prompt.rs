@@ -22,7 +22,7 @@ const ANSWER_INDEX: usize = 3;
 pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn Error>> {
   let theme = &greeter.theme;
 
-  let size = f.size();
+  let size = f.area();
   let (x, y, width, height) = get_rect_bounds(greeter, size, 0);
 
   let container_padding = greeter.container_padding();
@@ -113,7 +113,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
               } else {
                 let mut rng = StdRng::seed_from_u64(0);
 
-                greeter.buffer.chars().map(|_| pool.chars().nth(rng.gen_range(0..pool.chars().count())).unwrap()).collect()
+                greeter.buffer.chars().map(|_| pool.chars().nth(rng.random_range(0..pool.chars().count())).unwrap()).collect()
               }
             }
 

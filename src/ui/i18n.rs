@@ -13,7 +13,7 @@ lazy_static! {
   pub static ref MESSAGES: FluentLanguageLoader = {
     let locales = Localizations;
     let loader = fluent_language_loader!();
-    loader.load_languages(&locales, &[loader.fallback_language()]).unwrap();
+    loader.load_languages(&locales, &[loader.fallback_language().clone()]).unwrap();
 
     let _ = i18n_embed::select(&loader, &locales, &DesktopLanguageRequester::requested_languages());
 

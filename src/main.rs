@@ -113,7 +113,7 @@ where
       Some(Event::PowerCommand(command)) => {
         if let PowerPostAction::ClearScreen = power::run(&greeter, command).await {
           execute!(io::stdout(), LeaveAlternateScreen)?;
-          terminal.set_cursor(1, 1)?;
+          terminal.set_cursor_position((1, 1))?;
           terminal.clear()?;
           disable_raw_mode()?;
 
