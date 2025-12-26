@@ -3,7 +3,10 @@ name = "tuigreet"
 version = "0.9.1"
 authors = ["Antoine POPINEAU <antoine@popineau.eu>"]
 edition = "2024"
+license = "GPL-3.0-only"
 build = "build.rs"
+rust-version = "1.90"
+repository = "https://github.com/notashelf/tuigreet"
 
 [features]
 default = []
@@ -25,7 +28,7 @@ lazy_static = "1.5.0"
 nix = { version = "0.30.1", features = ["feature"] }
 tui = { package = "ratatui", version = "0.29.0", default-features = false, features = [
   "crossterm",
-  "unstable"
+  "unstable",
 ] }
 rust-embed = "8.9.0"
 rust-ini = "0.21.3"
@@ -54,5 +57,3 @@ unicode-width = "0.2.0"
 
 [profile.release]
 lto = true
-
-
