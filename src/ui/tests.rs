@@ -5,14 +5,16 @@ use tui::{
   Terminal,
   buffer::Buffer,
   layout::{Constraint, Direction, Layout, Rect},
+  style::Color,
 };
 
 use crate::{
   Greeter,
   Mode,
-  config::{Config, WidgetPosition},
+  config::{Config, ThemeConfig, WidgetPosition},
   integration::common::backend::TestBackend,
   ui,
+  ui::common::style::{Theme, Themed},
 };
 
 /// Create a test greeter with default configuration
@@ -421,4 +423,360 @@ async fn test_combined_time_and_status_positions() {
       assert_eq!(buffer.area().height, 24);
     }
   }
+}
+
+#[tokio::test]
+async fn test_theme_border_color_applied() {
+  let greeter = test_greeter();
+  {
+    let mut g = greeter.write().await;
+    g.mode = Mode::Username;
+
+    let mut config = Config::default();
+    config.theme.border = Some("red".to_string());
+
+    g.loaded_config = Some(config.clone());
+    g.apply_config(&config);
+    g.apply_theme_config(&config.theme, None);
+  }
+
+  let buffer = render_ui(greeter, 80, 24).await;
+
+  // Check that border characters have red color
+  let mut found_red_border = false;
+  for y in 0..24 {
+    for x in 0..80 {
+      let cell = &buffer[(x, y)];
+      let char = cell.symbol();
+      if (char == "─"
+        || char == "│"
+        || char == "┌"
+        || char == "┐"
+        || char == "└"
+        || char == "┘")
+        && cell.fg == Color::Red
+      {
+        found_red_border = true;
+        break;
+      }
+    }
+    if found_red_border {
+      break;
+    }
+  }
+
+  assert!(
+    found_red_border,
+    "Border should be rendered with red color from theme config"
+  );
+}
+
+#[tokio::test]
+async fn test_theme_prompt_color_applied() {
+  let greeter = test_greeter();
+  {
+    let mut g = greeter.write().await;
+    g.mode = Mode::Username;
+
+    let mut config = Config::default();
+    config.theme.prompt = Some("yellow".to_string());
+
+    g.loaded_config = Some(config.clone());
+    g.apply_config(&config);
+    g.apply_theme_config(&config.theme, None);
+  }
+
+  let buffer = render_ui(greeter, 80, 24).await;
+
+  // Look for yellow prompt text
+  let mut found_yellow = false;
+  for y in 0..24 {
+    for x in 0..80 {
+      let cell = &buffer[(x, y)];
+      if cell.fg == Color::Yellow && !cell.symbol().trim().is_empty() {
+        found_yellow = true;
+        break;
+      }
+    }
+    if found_yellow {
+      break;
+    }
+  }
+
+  assert!(
+    found_yellow,
+    "Prompt should be rendered with yellow color from theme config"
+  );
+}
+
+#[tokio::test]
+async fn test_theme_container_background_applied() {
+  let greeter = test_greeter();
+  {
+    let mut g = greeter.write().await;
+    g.mode = Mode::Username;
+
+    let mut config = Config::default();
+    config.theme.container = Some("blue".to_string());
+
+    g.loaded_config = Some(config.clone());
+    g.apply_config(&config);
+    g.apply_theme_config(&config.theme, None);
+  }
+
+  let buffer = render_ui(greeter, 80, 24).await;
+
+  // Look for blue background in container area
+  let mut found_blue_bg = false;
+  for y in 0..24 {
+    for x in 0..80 {
+      let cell = &buffer[(x, y)];
+      if cell.bg == Color::Blue {
+        found_blue_bg = true;
+        break;
+      }
+    }
+    if found_blue_bg {
+      break;
+    }
+  }
+
+  assert!(
+    found_blue_bg,
+    "Container should be rendered with blue background from theme config"
+  );
+}
+
+#[tokio::test]
+async fn test_theme_greeting_color_applied() {
+  let greeter = test_greeter();
+  {
+    let mut g = greeter.write().await;
+    g.mode = Mode::Username;
+    g.greeting = Some("Welcome to the system!".to_string());
+
+    let mut config = Config::default();
+    config.theme.greet = Some("green".to_string());
+
+    g.loaded_config = Some(config.clone());
+    g.apply_config(&config);
+    g.apply_theme_config(&config.theme, None);
+  }
+
+  let buffer = render_ui(greeter, 80, 24).await;
+
+  // Look for green greeting text
+  let mut found_green_greeting = false;
+  for y in 0..24 {
+    let line = get_line(&buffer, y, 80);
+    if line.contains("Welcome") || line.contains("system") {
+      // Check if any cell in this line has green foreground
+      for x in 0..80 {
+        if buffer[(x, y)].fg == Color::Green {
+          found_green_greeting = true;
+          break;
+        }
+      }
+    }
+    if found_green_greeting {
+      break;
+    }
+  }
+
+  assert!(
+    found_green_greeting,
+    "Greeting should be rendered with green color from theme config"
+  );
+}
+
+#[tokio::test]
+async fn test_theme_hex_colors_applied() {
+  let greeter = test_greeter();
+  {
+    let mut g = greeter.write().await;
+    g.mode = Mode::Username;
+
+    let mut config = Config::default();
+    config.theme.border = Some("#ff0000".to_string()); // Red in hex
+
+    g.loaded_config = Some(config.clone());
+    g.apply_config(&config);
+    g.apply_theme_config(&config.theme, None);
+  }
+
+  let buffer = render_ui(greeter, 80, 24).await;
+
+  // Look for RGB(255,0,0) border
+  let mut found_rgb_border = false;
+  for y in 0..24 {
+    for x in 0..80 {
+      let cell = &buffer[(x, y)];
+      let char = cell.symbol();
+      if (char == "─"
+        || char == "│"
+        || char == "┌"
+        || char == "┐"
+        || char == "└"
+        || char == "┘")
+        && cell.fg == Color::Rgb(255, 0, 0)
+      {
+        found_rgb_border = true;
+        break;
+      }
+    }
+    if found_rgb_border {
+      break;
+    }
+  }
+
+  assert!(
+    found_rgb_border,
+    "Border should be rendered with hex color (#ff0000) from theme config"
+  );
+}
+
+#[tokio::test]
+async fn test_theme_multiple_colors_applied() {
+  let greeter = test_greeter();
+  {
+    let mut g = greeter.write().await;
+    g.mode = Mode::Username;
+    g.greeting = Some("Test".to_string());
+
+    let mut config = Config::default();
+    config.theme.border = Some("red".to_string());
+    config.theme.text = Some("cyan".to_string());
+    config.theme.greet = Some("green".to_string());
+
+    g.loaded_config = Some(config.clone());
+    g.apply_config(&config);
+    g.apply_theme_config(&config.theme, None);
+  }
+
+  let buffer = render_ui(greeter, 80, 24).await;
+
+  let mut found_red = false;
+  let mut found_cyan = false;
+  let mut found_green = false;
+
+  for y in 0..24 {
+    for x in 0..80 {
+      let cell = &buffer[(x, y)];
+      if cell.fg == Color::Red {
+        found_red = true;
+      }
+      if cell.fg == Color::Cyan {
+        found_cyan = true;
+      }
+      if cell.fg == Color::Green {
+        found_green = true;
+      }
+    }
+  }
+
+  assert!(found_red, "Should have red elements from border theme");
+  assert!(
+    found_cyan || found_green,
+    "Should have cyan or green elements from text/greet theme"
+  );
+}
+
+#[tokio::test]
+async fn test_cli_theme_overrides_config_theme() {
+  let greeter = test_greeter();
+  {
+    let mut g = greeter.write().await;
+    g.mode = Mode::Username;
+
+    let mut config = Config::default();
+    config.theme.border = Some("red".to_string());
+
+    // CLI theme overrides with blue
+    g.loaded_config = Some(config.clone());
+    g.apply_config(&config);
+    g.apply_theme_config(&config.theme, Some("border=blue"));
+  }
+
+  let buffer = render_ui(greeter, 80, 24).await;
+
+  // Should find blue border (CLI override), not red
+  let mut found_blue_border = false;
+  let mut found_red_border = false;
+
+  for y in 0..24 {
+    for x in 0..80 {
+      let cell = &buffer[(x, y)];
+      let char = cell.symbol();
+      if char == "─"
+        || char == "│"
+        || char == "┌"
+        || char == "┐"
+        || char == "└"
+        || char == "┘"
+      {
+        if cell.fg == Color::Blue {
+          found_blue_border = true;
+        }
+        if cell.fg == Color::Red {
+          found_red_border = true;
+        }
+      }
+    }
+  }
+
+  assert!(
+    found_blue_border,
+    "CLI theme should override config theme with blue"
+  );
+  assert!(
+    !found_red_border,
+    "Config theme red should be overridden by CLI"
+  );
+}
+
+#[tokio::test]
+async fn test_theme_with_time_widget() {
+  let greeter = test_greeter();
+  {
+    let mut g = greeter.write().await;
+    g.mode = Mode::Username;
+    g.time = true;
+
+    let mut config = Config::default();
+    config.display.show_time = true;
+    config.theme.time = Some("lightred".to_string());
+
+    g.loaded_config = Some(config.clone());
+    g.apply_config(&config);
+    g.apply_theme_config(&config.theme, None);
+  }
+
+  let buffer = render_ui(greeter, 80, 24).await;
+
+  // Verify time is displayed and theme is applied
+  let mut found_time = false;
+  let mut found_lightred = false;
+
+  for y in 0..24 {
+    for x in 0..80 {
+      let cell = &buffer[(x, y)];
+      let symbol = cell.symbol();
+
+      // Check for time-like content (digits and colons)
+      if symbol.chars().any(|c| c.is_ascii_digit() || c == ':') {
+        found_time = true;
+      }
+
+      // Check for light red color anywhere
+      if cell.fg == Color::LightRed {
+        found_lightred = true;
+      }
+    }
+  }
+
+  assert!(found_time, "Time widget should be displayed");
+  assert!(
+    found_lightred,
+    "Theme color (lightred) should be applied somewhere in the UI"
+  );
 }

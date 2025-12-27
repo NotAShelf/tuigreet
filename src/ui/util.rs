@@ -145,10 +145,10 @@ pub fn get_greeting_height(
   if let Some(greeting) = &greeter.greeting {
     let width = greeter.width();
 
-  let text = match greeting.clone().trim().into_text() {
-    Ok(text) => Text::from(text.to_string()),
-    Err(_) => Text::raw(greeting),
-  };
+    let text = match greeting.clone().trim().into_text() {
+      Ok(text) => text,
+      Err(_) => Text::raw(greeting),
+    };
 
     let paragraph = Paragraph::new(text.clone()).wrap(Wrap { trim: false });
     let height = paragraph.line_count(width - (2 * padding)) + 1;
