@@ -278,163 +278,6 @@ pub fn apply_env_vars(config: &mut Config) {
               "button" => config.theme.button = Some(color.to_string()),
               _ => unreachable!(),
             }
-
-            // Display configuration
-            if let Ok(value) = env::var("TUIGREET_ALIGN_GREETING") {
-              match value.to_lowercase().as_str() {
-                "left" => config.display.align_greeting = AlignGreeting::Left,
-                "center" => {
-                  config.display.align_greeting = AlignGreeting::Center
-                },
-                "right" => config.display.align_greeting = AlignGreeting::Right,
-                _ => {
-                  tracing::warn!(
-                    "Invalid TUIGREET_ALIGN_GREETING value: '{}', expected \
-                     'left', 'center', or 'right'",
-                    value
-                  );
-                },
-              }
-            }
-
-            // Secret configuration
-            if let Ok(value) = env::var("TUIGREET_SECRET_MODE") {
-              match value.to_lowercase().as_str() {
-                "hidden" => config.secret.mode = SecretMode::Hidden,
-                "character" | "characters" => {
-                  config.secret.mode = SecretMode::Characters;
-                  if let Ok(chars) = env::var("TUIGREET_SECRET_CHARACTERS") {
-                    config.secret.characters = chars;
-                  }
-                },
-                _ => {
-                  tracing::warn!(
-                    "Invalid TUIGREET_SECRET_MODE value: '{}', expected \
-                     'hidden' or 'characters'",
-                    value
-                  );
-                },
-              }
-            }
-
-            if let Ok(value) = env::var("TUIGREET_SECRET_CHARACTERS") {
-              config.secret.characters = value;
-            }
-
-            // Session configuration
-            if let Ok(value) = env::var("TUIGREET_SESSIONS_DIRS") {
-              config.session.sessions_dirs = value
-                .split(':')
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty())
-                .collect();
-            }
-
-            if let Ok(value) = env::var("TUIGREET_XSESSIONS_DIRS") {
-              config.session.xsessions_dirs = value
-                .split(':')
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty())
-                .collect();
-            }
-
-            if let Ok(value) = env::var("TUIGREET_SESSION_WRAPPER") {
-              config.session.session_wrapper = Some(value);
-            }
-
-            if let Ok(value) = env::var("TUIGREET_XSESSION_WRAPPER") {
-              config.session.xsession_wrapper = Some(value);
-            }
-
-            if let Ok(value) = env::var("TUIGREET_ENVIRONMENTS") {
-              config.session.environments = value
-                .split(':')
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty())
-                .collect();
-            }
-
-            // Widget positioning configuration
-            if let Ok(value) = env::var("TUIGREET_TIME_POSITION") {
-              match value.to_lowercase().as_str() {
-                "default" => {
-                  config.layout.widgets.time_position = WidgetPosition::Default
-                },
-                "top" => {
-                  config.layout.widgets.time_position = WidgetPosition::Top
-                },
-                "bottom" => {
-                  config.layout.widgets.time_position = WidgetPosition::Bottom
-                },
-                "hidden" => {
-                  config.layout.widgets.time_position = WidgetPosition::Hidden
-                },
-                _ => {
-                  tracing::warn!(
-                    "Invalid TUIGREET_TIME_POSITION value: '{}', expected \
-                     'default', 'top', 'bottom', or 'hidden'",
-                    value
-                  );
-                },
-              }
-            }
-
-            if let Ok(value) = env::var("TUIGREET_STATUS_POSITION") {
-              match value.to_lowercase().as_str() {
-                "default" => {
-                  config.layout.widgets.status_position =
-                    WidgetPosition::Default
-                },
-                "top" => {
-                  config.layout.widgets.status_position = WidgetPosition::Top
-                },
-                "bottom" => {
-                  config.layout.widgets.status_position = WidgetPosition::Bottom
-                },
-                "hidden" => {
-                  config.layout.widgets.status_position = WidgetPosition::Hidden
-                },
-                _ => {
-                  tracing::warn!(
-                    "Invalid TUIGREET_STATUS_POSITION value: '{}', expected \
-                     'default', 'top', 'bottom', or 'hidden'",
-                    value
-                  );
-                },
-              }
-            }
-
-            // Individual theme component environment variables
-            if let Ok(value) = env::var("TUIGREET_THEME_BORDER") {
-              config.theme.border = Some(value);
-            }
-            if let Ok(value) = env::var("TUIGREET_THEME_TEXT") {
-              config.theme.text = Some(value);
-            }
-            if let Ok(value) = env::var("TUIGREET_THEME_TIME") {
-              config.theme.time = Some(value);
-            }
-            if let Ok(value) = env::var("TUIGREET_THEME_CONTAINER") {
-              config.theme.container = Some(value);
-            }
-            if let Ok(value) = env::var("TUIGREET_THEME_TITLE") {
-              config.theme.title = Some(value);
-            }
-            if let Ok(value) = env::var("TUIGREET_THEME_GREET") {
-              config.theme.greet = Some(value);
-            }
-            if let Ok(value) = env::var("TUIGREET_THEME_PROMPT") {
-              config.theme.prompt = Some(value);
-            }
-            if let Ok(value) = env::var("TUIGREET_THEME_INPUT") {
-              config.theme.input = Some(value);
-            }
-            if let Ok(value) = env::var("TUIGREET_THEME_ACTION") {
-              config.theme.action = Some(value);
-            }
-            if let Ok(value) = env::var("TUIGREET_THEME_BUTTON") {
-              config.theme.button = Some(value);
-            }
             spec_parts.push(format!("{}={}", key, color));
           },
           _ => {
@@ -460,6 +303,146 @@ pub fn apply_env_vars(config: &mut Config) {
         spec_parts.join(";")
       );
     }
+  }
+
+  // Display configuration
+  if let Ok(value) = env::var("TUIGREET_ALIGN_GREETING") {
+    match value.to_lowercase().as_str() {
+      "left" => config.display.align_greeting = AlignGreeting::Left,
+      "center" => config.display.align_greeting = AlignGreeting::Center,
+      "right" => config.display.align_greeting = AlignGreeting::Right,
+      _ => {
+        tracing::warn!(
+          "Invalid TUIGREET_ALIGN_GREETING value: '{}', expected 'left', \
+           'center', or 'right'",
+          value
+        );
+      },
+    }
+  }
+
+  // Secret configuration
+  if let Ok(value) = env::var("TUIGREET_SECRET_MODE") {
+    match value.to_lowercase().as_str() {
+      "hidden" => config.secret.mode = SecretMode::Hidden,
+      "character" | "characters" => {
+        config.secret.mode = SecretMode::Characters;
+        if let Ok(chars) = env::var("TUIGREET_SECRET_CHARACTERS") {
+          config.secret.characters = chars;
+        }
+      },
+      _ => {
+        tracing::warn!(
+          "Invalid TUIGREET_SECRET_MODE value: '{}', expected 'hidden' or \
+           'characters'",
+          value
+        );
+      },
+    }
+  }
+
+  if let Ok(value) = env::var("TUIGREET_SECRET_CHARACTERS") {
+    config.secret.characters = value;
+  }
+
+  // Session configuration
+  if let Ok(value) = env::var("TUIGREET_SESSIONS_DIRS") {
+    config.session.sessions_dirs = value
+      .split(':')
+      .map(|s| s.trim().to_string())
+      .filter(|s| !s.is_empty())
+      .collect();
+  }
+
+  if let Ok(value) = env::var("TUIGREET_XSESSIONS_DIRS") {
+    config.session.xsessions_dirs = value
+      .split(':')
+      .map(|s| s.trim().to_string())
+      .filter(|s| !s.is_empty())
+      .collect();
+  }
+
+  if let Ok(value) = env::var("TUIGREET_SESSION_WRAPPER") {
+    config.session.session_wrapper = Some(value);
+  }
+
+  if let Ok(value) = env::var("TUIGREET_XSESSION_WRAPPER") {
+    config.session.xsession_wrapper = Some(value);
+  }
+
+  if let Ok(value) = env::var("TUIGREET_ENVIRONMENTS") {
+    config.session.environments = value
+      .split(':')
+      .map(|s| s.trim().to_string())
+      .filter(|s| !s.is_empty())
+      .collect();
+  }
+
+  // Widget positioning configuration
+  if let Ok(value) = env::var("TUIGREET_TIME_POSITION") {
+    match value.to_lowercase().as_str() {
+      "default" => config.layout.widgets.time_position = WidgetPosition::Default,
+      "top" => config.layout.widgets.time_position = WidgetPosition::Top,
+      "bottom" => config.layout.widgets.time_position = WidgetPosition::Bottom,
+      "hidden" => config.layout.widgets.time_position = WidgetPosition::Hidden,
+      _ => {
+        tracing::warn!(
+          "Invalid TUIGREET_TIME_POSITION value: '{}', expected 'default', \
+           'top', 'bottom', or 'hidden'",
+          value
+        );
+      },
+    }
+  }
+
+  if let Ok(value) = env::var("TUIGREET_STATUS_POSITION") {
+    match value.to_lowercase().as_str() {
+      "default" => {
+        config.layout.widgets.status_position = WidgetPosition::Default
+      },
+      "top" => config.layout.widgets.status_position = WidgetPosition::Top,
+      "bottom" => config.layout.widgets.status_position = WidgetPosition::Bottom,
+      "hidden" => config.layout.widgets.status_position = WidgetPosition::Hidden,
+      _ => {
+        tracing::warn!(
+          "Invalid TUIGREET_STATUS_POSITION value: '{}', expected 'default', \
+           'top', 'bottom', or 'hidden'",
+          value
+        );
+      },
+    }
+  }
+
+  // Individual theme component environment variables
+  if let Ok(value) = env::var("TUIGREET_THEME_BORDER") {
+    config.theme.border = Some(value);
+  }
+  if let Ok(value) = env::var("TUIGREET_THEME_TEXT") {
+    config.theme.text = Some(value);
+  }
+  if let Ok(value) = env::var("TUIGREET_THEME_TIME") {
+    config.theme.time = Some(value);
+  }
+  if let Ok(value) = env::var("TUIGREET_THEME_CONTAINER") {
+    config.theme.container = Some(value);
+  }
+  if let Ok(value) = env::var("TUIGREET_THEME_TITLE") {
+    config.theme.title = Some(value);
+  }
+  if let Ok(value) = env::var("TUIGREET_THEME_GREET") {
+    config.theme.greet = Some(value);
+  }
+  if let Ok(value) = env::var("TUIGREET_THEME_PROMPT") {
+    config.theme.prompt = Some(value);
+  }
+  if let Ok(value) = env::var("TUIGREET_THEME_INPUT") {
+    config.theme.input = Some(value);
+  }
+  if let Ok(value) = env::var("TUIGREET_THEME_ACTION") {
+    config.theme.action = Some(value);
+  }
+  if let Ok(value) = env::var("TUIGREET_THEME_BUTTON") {
+    config.theme.button = Some(value);
   }
 }
 
@@ -493,5 +476,35 @@ mod tests {
 
     assert_eq!(parse_bool("invalid"), Err(()));
     assert_eq!(parse_bool(""), Err(()));
+  }
+
+  #[test]
+  fn test_env_vars_processed_once_with_multiple_theme_components() {
+    unsafe {
+      env::set_var("TUIGREET_THEME", "border=red;text=blue;container=green");
+      env::set_var("TUIGREET_SESSIONS_DIRS", "/test:/usr/share");
+      env::set_var("TUIGREET_ALIGN_GREETING", "center");
+    }
+
+    let mut config = Config::default();
+    apply_env_vars(&mut config);
+
+    // Verify all theme components applied
+    assert_eq!(config.theme.border, Some("red".to_string()));
+    assert_eq!(config.theme.text, Some("blue".to_string()));
+    assert_eq!(config.theme.container, Some("green".to_string()));
+
+    // Verify other env vars applied correctly (once, not per-component)
+    assert_eq!(
+      config.session.sessions_dirs,
+      vec!["/test".to_string(), "/usr/share".to_string()]
+    );
+    assert_eq!(config.display.align_greeting, AlignGreeting::Center);
+
+    unsafe {
+      env::remove_var("TUIGREET_THEME");
+      env::remove_var("TUIGREET_SESSIONS_DIRS");
+      env::remove_var("TUIGREET_ALIGN_GREETING");
+    }
   }
 }
