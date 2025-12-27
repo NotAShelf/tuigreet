@@ -27,8 +27,8 @@ const LAST_USER_NAME: &str = "/var/cache/tuigreet/lastuser-name";
 const LAST_COMMAND: &str = "/var/cache/tuigreet/lastsession";
 const LAST_SESSION: &str = "/var/cache/tuigreet/lastsession-path";
 
-const DEFAULT_MIN_UID: u16 = 1000;
-const DEFAULT_MAX_UID: u16 = 60000;
+const DEFAULT_MIN_UID: u32 = 1000;
+const DEFAULT_MAX_UID: u32 = 60000;
 
 static XDG_DATA_DIRS: OnceLock<Vec<PathBuf>> = OnceLock::new();
 static DEFAULT_SESSION_PATHS: OnceLock<Vec<(PathBuf, SessionType)>> =
@@ -235,11 +235,11 @@ pub fn delete_last_user_command(username: &str) {
   let _ = fs::remove_file(format!("{LAST_COMMAND}-{username}"));
 }
 
-pub fn get_users(min_uid: u16, max_uid: u16) -> Vec<User> {
+pub fn get_users(min_uid: u32, max_uid: u32) -> Vec<User> {
   let users = unsafe { uzers::all_users() };
 
   let users: Vec<User> = users
-    .filter(|user| user.uid() >= min_uid as u32 && user.uid() <= max_uid as u32)
+    .filter(|user| user.uid() >= min_uid && user.uid() <= max_uid)
     .map(|user| {
       User {
         username: user.name().to_string_lossy().to_string(),
@@ -262,9 +262,9 @@ pub fn get_users(min_uid: u16, max_uid: u16) -> Vec<User> {
 }
 
 pub fn get_min_max_uids(
-  min_uid: Option<u16>,
-  max_uid: Option<u16>,
-) -> (u16, u16) {
+  min_uid: Option<u32>,
+  max_uid: Option<u32>,
+) -> (u32, u32) {
   if let (Some(min_uid), Some(max_uid)) = (min_uid, max_uid) {
     return (min_uid, max_uid);
   }
@@ -280,17 +280,17 @@ pub fn get_min_max_uids(
     Ok(file) => {
       let file = BufReader::new(file);
 
-      let uids: (u16, u16) = file.lines().fold(default, |acc, line| {
+      let uids: (u32, u32) = file.lines().fold(default, |acc, line| {
         line
           .map(|line| {
             let mut tokens = line.split_whitespace();
 
             match (overrides, tokens.next(), tokens.next()) {
               ((None, _), Some("UID_MIN"), Some(value)) => {
-                (value.parse::<u16>().unwrap_or(acc.0), acc.1)
+                (value.parse::<u32>().unwrap_or(acc.0), acc.1)
               },
               ((_, None), Some("UID_MAX"), Some(value)) => {
-                (acc.0, value.parse::<u16>().unwrap_or(acc.1))
+                (acc.0, value.parse::<u32>().unwrap_or(acc.1))
               },
               _ => acc,
             }

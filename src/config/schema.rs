@@ -132,11 +132,11 @@ pub struct UserMenuConfig {
 
   /// Minimum UID to display in user menu
   #[serde(default = "default_min_uid")]
-  pub min_uid: u16,
+  pub min_uid: u32,
 
   /// Maximum UID to display in user menu
   #[serde(default = "default_max_uid")]
-  pub max_uid: u16,
+  pub max_uid: u32,
 }
 
 impl Default for UserMenuConfig {
@@ -342,11 +342,11 @@ fn default_xsession_wrapper() -> Option<String> {
   Some("startx /usr/bin/env".to_string())
 }
 
-fn default_min_uid() -> u16 {
+fn default_min_uid() -> u32 {
   1000
 }
 
-fn default_max_uid() -> u16 {
+fn default_max_uid() -> u32 {
   60000
 }
 

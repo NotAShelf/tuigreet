@@ -107,7 +107,7 @@ pub fn apply_env_vars(config: &mut Config) {
   }
 
   if let Ok(value) = env::var("TUIGREET_USER_MENU_MIN_UID") {
-    if let Ok(uid) = value.parse::<u16>() {
+    if let Ok(uid) = value.parse::<u32>() {
       config.user_menu.min_uid = uid;
     } else {
       tracing::warn!(
@@ -118,7 +118,7 @@ pub fn apply_env_vars(config: &mut Config) {
   }
 
   if let Ok(value) = env::var("TUIGREET_USER_MENU_MAX_UID") {
-    if let Ok(uid) = value.parse::<u16>() {
+    if let Ok(uid) = value.parse::<u32>() {
       config.user_menu.max_uid = uid;
     } else {
       tracing::warn!(

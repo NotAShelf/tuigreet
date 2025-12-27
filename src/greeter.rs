@@ -777,11 +777,11 @@ impl Greeter {
       let min_uid = self
         .config()
         .opt_str("user-menu-min-uid")
-        .and_then(|uid| uid.parse::<u16>().ok());
+        .and_then(|uid| uid.parse::<u32>().ok());
       let max_uid = self
         .config()
         .opt_str("user-menu-max-uid")
-        .and_then(|uid| uid.parse::<u16>().ok());
+        .and_then(|uid| uid.parse::<u32>().ok());
       let (min_uid, max_uid) = get_min_max_uids(min_uid, max_uid);
 
       tracing::info!("min/max UIDs are {}/{}", min_uid, max_uid);
