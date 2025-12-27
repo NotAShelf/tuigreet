@@ -532,3 +532,58 @@ fn command_exists(command: &str) -> bool {
   }
   false
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_mutual_exclusive_remember_flags() {
+    let toml_content = r#"
+[remember]
+username = true
+session = true
+user_session = true
+"#;
+
+    let config: Config =
+      toml::from_str(toml_content).expect("Failed to parse TOML");
+
+    assert!(config.remember.session);
+    assert!(config.remember.user_session);
+
+    let result = config.validate(false);
+    assert!(
+      result.is_err(),
+      "Expected validation to fail when both remember.session and \
+       remember.user_session are true"
+    );
+  }
+
+  #[test]
+  fn test_validate_enforces_mutual_exclusion() {
+    let toml_content = r#"
+[remember]
+username = true
+session = true
+user_session = true
+"#;
+
+    let config: Config =
+      toml::from_str(toml_content).expect("Failed to parse TOML");
+    let validation_result = config.validate(false);
+
+    match validation_result {
+      Err(ConfigError::MutuallyExclusive(opt1, opt2)) => {
+        assert_eq!(opt1, "remember.session");
+        assert_eq!(opt2, "remember.user_session");
+      },
+      _ => {
+        panic!(
+          "Expected MutuallyExclusive error, got: {:?}",
+          validation_result
+        );
+      },
+    }
+  }
+}

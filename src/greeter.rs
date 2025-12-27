@@ -258,28 +258,35 @@ impl Greeter {
                 for warning in warnings {
                   tracing::warn!("Config warning: {}", warning);
                 }
+
+                // Apply config to greeter only if validation passed
+                greeter.apply_config(&config);
+
+                // Apply theme config
+                let cli_theme = greeter.config().opt_str("theme");
+                greeter.apply_theme_config(&config.theme, cli_theme.as_deref());
+
+                // Store config for later use
+                greeter.loaded_config = Some(config.clone());
+
+                // Handle --dump-config
+                if greeter.config().opt_present("dump-config") {
+                  let toml_str = toml::to_string_pretty(&config)
+                    .unwrap_or_else(|_| {
+                      "# Failed to serialize config".to_string()
+                    });
+                  println!("{}", toml_str);
+                  process::exit(0);
+                }
               },
               Err(e) => {
-                tracing::warn!("Config validation failed: {}", e);
+                tracing::error!("Config validation failed: {}", e);
+                tracing::error!(
+                  "Skipping invalid configuration, using CLI options and \
+                   defaults"
+                );
+                // Do not apply invalid config - continue with CLI options
               },
-            }
-
-            // Apply config to greeter
-            greeter.apply_config(&config);
-
-            // Apply theme config
-            let cli_theme = greeter.config().opt_str("theme");
-            greeter.apply_theme_config(&config.theme, cli_theme.as_deref());
-
-            // Store config for later use
-            greeter.loaded_config = Some(config.clone());
-
-            // Handle --dump-config
-            if greeter.config().opt_present("dump-config") {
-              let toml_str = toml::to_string_pretty(&config)
-                .unwrap_or_else(|_| "# Failed to serialize config".to_string());
-              println!("{}", toml_str);
-              process::exit(0);
             }
           },
           Err(e) => {
