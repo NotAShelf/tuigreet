@@ -98,14 +98,20 @@ where
       constraints.push(Constraint::Length(1));
     }
 
+    // Status at top (if configured)
+    if matches!(status_position, WidgetPosition::Top) {
+      status_slot = Some(constraints.len());
+      constraints.push(Constraint::Length(1));
+    }
+
     // Main content area
     let main_slot = constraints.len();
     constraints.push(Constraint::Min(1));
 
     // Status at bottom (default behavior)
-    if !matches!(
+    if matches!(
       status_position,
-      WidgetPosition::Hidden | WidgetPosition::Top
+      WidgetPosition::Default | WidgetPosition::Bottom
     ) {
       status_slot = Some(constraints.len());
       constraints.push(Constraint::Length(1));
