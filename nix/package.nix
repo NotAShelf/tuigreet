@@ -20,7 +20,6 @@ in
         fileset = fs.unions [
           (fs.fileFilter (file: builtins.any file.hasExt ["rs"]) (s + /src))
           (s + /contrib)
-
           (s + /build.rs)
           (s + /Cargo.lock)
           (s + /Cargo.toml)
@@ -30,13 +29,12 @@ in
 
     cargoLock.lockFile = "${finalAttrs.src}/Cargo.lock";
     enableParallelBuilding = true;
+    useNextest = true;
 
     nativeBuildInputs = [
       installShellFiles
       scdoc
     ];
-
-    doCheck = false;
 
     postInstall = ''
       scdoc < ${../contrib}/man/tuigreet-1.scd > tuigreet.1
