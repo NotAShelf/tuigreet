@@ -347,12 +347,12 @@ async fn test_window_padding() {
   let second_row = get_line(&buffer, 1, 80);
 
   assert!(
-    first_row.trim().is_empty() || first_row.chars().all(|c| c == ' '),
-    "First row should be padding"
+    first_row.chars().all(|c| c == ' '),
+    "First row should be padding (all spaces)"
   );
   assert!(
-    second_row.trim().is_empty() || !second_row.contains("Username"),
-    "Second row should be padding"
+    second_row.chars().all(|c| c == ' '),
+    "Second row should be padding (all spaces)"
   );
 }
 
