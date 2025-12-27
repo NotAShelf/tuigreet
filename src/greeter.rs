@@ -1074,6 +1074,29 @@ impl Greeter {
     if !self.config().opt_present("kb-power") {
       self.kb_power = config.keybindings.power;
     }
+
+    if self.kb_command == self.kb_sessions
+      || self.kb_sessions == self.kb_power
+      || self.kb_power == self.kb_command
+    {
+      tracing::error!(
+        "Keybindings must all be distinct after merging CLI and config. Found: \
+         command={}, sessions={}, power={}. Using CLI values only.",
+        self.kb_command,
+        self.kb_sessions,
+        self.kb_power
+      );
+      
+      if !self.config().opt_present("kb-command") {
+        self.kb_command = 2;
+      }
+      if !self.config().opt_present("kb-sessions") {
+        self.kb_sessions = 3;
+      }
+      if !self.config().opt_present("kb-power") {
+        self.kb_power = 12;
+      }
+    }
   }
 
   // Apply theme configuration
@@ -1248,5 +1271,34 @@ mod test {
         false => assert!(matches!(greeter.parse_options(*opts).await, Err(_))),
       }
     }
+  }
+
+  #[tokio::test]
+  async fn test_merged_keybindings_validated() {
+    let mut greeter = Greeter::default();
+    
+    greeter.parse_options(&["--kb-sessions", "5"]).await.expect("parse should succeed");
+    
+    assert_eq!(greeter.kb_command, 2);
+    assert_eq!(greeter.kb_sessions, 5);
+    assert_eq!(greeter.kb_power, 12);
+    
+    let mut config = crate::config::Config::default();
+    config.keybindings.command = 5;
+    config.keybindings.sessions = 3;
+    config.keybindings.power = 7;
+    
+    assert!(config.validate(false).is_ok(), "Config alone is valid");
+    
+    greeter.apply_config(&config);
+    
+    assert_eq!(greeter.kb_command, 2, "kb_command reverted to CLI default");
+    assert_eq!(greeter.kb_sessions, 5, "kb_sessions from CLI preserved");
+    assert_eq!(greeter.kb_power, 12, "kb_power reverted to CLI default");
+    
+    assert!(greeter.kb_command != greeter.kb_sessions 
+      && greeter.kb_sessions != greeter.kb_power 
+      && greeter.kb_power != greeter.kb_command,
+      "Keybindings must be distinct after applying config");
   }
 }

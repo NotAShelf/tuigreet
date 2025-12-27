@@ -586,4 +586,28 @@ user_session = true
       },
     }
   }
+
+  #[test]
+  fn test_keybindings_distinctness_in_config() {
+    let toml_content = r#"
+[keybindings]
+command = 3
+sessions = 3
+power = 7
+"#;
+
+    let config: Config =
+      toml::from_str(toml_content).expect("Failed to parse TOML");
+    let validation_result = config.validate(false);
+
+    match validation_result {
+      Err(ConfigError::DuplicateKeybindings) => {},
+      _ => {
+        panic!(
+          "Expected DuplicateKeybindings error, got: {:?}",
+          validation_result
+        );
+      },
+    }
+  }
 }
