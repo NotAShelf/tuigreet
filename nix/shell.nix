@@ -7,6 +7,7 @@
   clippy,
   taplo,
   rustPlatform,
+  cargo-nextest,
 }:
 mkShell {
   name = "rust";
@@ -17,13 +18,13 @@ mkShell {
     cargo
 
     # Tools
-    (rustfmt.override {asNightly = true;})
-    clippy
-    cargo
-    taplo
+    rust-analyzer-unwrapped # LSP
+    (rustfmt.override {asNightly = true;}) # formatter
+    clippy # linter
+    taplo # TOML formatter
 
-    # LSP
-    rust-analyzer-unwrapped
+    # Additional Cargo Tooling
+    cargo-nextest
   ];
 
   RUST_SRC_PATH = "${rustPlatform.rustLibSrc}";
