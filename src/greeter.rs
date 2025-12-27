@@ -10,7 +10,28 @@ use std::{
 };
 
 use chrono::{
-  Locale,
+  Locale,NotAShelf
+  NotAShelf
+  Merge pull request #3 from NotAShelf/notashelf/push-rrosmvtlvxpp
+  416bbe8
+   ·
+  3 minutes ago
+  .github
+
+  Better with the proper syntax.
+
+  last year
+  contrib
+
+  contrib: add sample configuration
+
+  8 hours ago
+  nix
+
+  nix: run tests with nextest
+
+  8 hours ago
+
   format::{Item, StrftimeItems},
 };
 use getopts::{Matches, Options};
@@ -201,6 +222,9 @@ pub struct Greeter {
   pub done:    bool,
   // Should we exit?
   pub exit:    Option<AuthStatus>,
+
+  // Should we silence command output?
+  pub silent: bool,
 }
 
 impl Drop for Greeter {
@@ -699,6 +723,8 @@ impl Greeter {
     opts.optflag("", "no-config", "disable loading configuration files");
     opts.optflag("", "dump-config", "print effective configuration and exit");
 
+    opts.optflag("", "silent", "silence command output");
+
     opts
   }
 
@@ -1096,6 +1122,8 @@ impl Greeter {
       if !self.config().opt_present("kb-power") {
         self.kb_power = 12;
       }
+
+      self.silent = self.config().opt_present("silent");
     }
   }
 

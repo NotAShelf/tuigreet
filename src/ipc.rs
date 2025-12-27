@@ -1,29 +1,19 @@
 use std::{borrow::Cow, error::Error, sync::Arc};
 
 use greetd_ipc::{
-  AuthMessageType,
-  ErrorType,
-  Request,
-  Response,
-  codec::TokioCodec,
+  AuthMessageType, ErrorType, Request, Response, codec::TokioCodec,
 };
 use tokio::sync::{
-  Mutex,
-  RwLock,
+  Mutex, RwLock,
   mpsc::{Receiver, Sender},
 };
 
 use crate::{
-  AuthStatus,
-  Greeter,
-  Mode,
+  AuthStatus, Greeter, Mode,
   event::Event,
   info::{
-    delete_last_user_command,
-    delete_last_user_session,
-    write_last_user_command,
-    write_last_user_session,
-    write_last_username,
+    delete_last_user_command, delete_last_user_session,
+    write_last_user_command, write_last_user_session, write_last_username,
   },
   macros::SafeDebug,
   ui::sessions::{Session, SessionSource, SessionType},
@@ -106,48 +96,46 @@ impl Ipc {
       Response::AuthMessage {
         auth_message_type,
         auth_message,
-      } => {
-        match auth_message_type {
-          AuthMessageType::Secret => {
-            greeter.mode = Mode::Password;
-            greeter.working = false;
-            greeter.asking_for_secret = true;
-            greeter.set_prompt(&auth_message);
-          },
+      } => match auth_message_type {
+        AuthMessageType::Secret => {
+          greeter.mode = Mode::Password;
+          greeter.working = false;
+          greeter.asking_for_secret = true;
+          greeter.set_prompt(&auth_message);
+        },
 
-          AuthMessageType::Visible => {
-            greeter.mode = Mode::Password;
-            greeter.working = false;
-            greeter.asking_for_secret = false;
-            greeter.set_prompt(&auth_message);
-          },
+        AuthMessageType::Visible => {
+          greeter.mode = Mode::Password;
+          greeter.working = false;
+          greeter.asking_for_secret = false;
+          greeter.set_prompt(&auth_message);
+        },
 
-          AuthMessageType::Error => {
-            greeter.message = Some(auth_message);
+        AuthMessageType::Error => {
+          greeter.message = Some(auth_message);
 
-            self
-              .send(Request::PostAuthMessageResponse { response: None })
-              .await;
-          },
+          self
+            .send(Request::PostAuthMessageResponse { response: None })
+            .await;
+        },
 
-          AuthMessageType::Info => {
-            greeter.remove_prompt();
+        AuthMessageType::Info => {
+          greeter.remove_prompt();
 
-            greeter.previous_mode = greeter.mode;
-            greeter.mode = Mode::Action;
+          greeter.previous_mode = greeter.mode;
+          greeter.mode = Mode::Action;
 
-            if let Some(message) = &mut greeter.message {
-              message.push('\n');
-              message.push_str(auth_message.trim_end());
-            } else {
-              greeter.message = Some(auth_message.trim_end().to_string());
-            }
+          if let Some(message) = &mut greeter.message {
+            message.push('\n');
+            message.push_str(auth_message.trim_end());
+          } else {
+            greeter.message = Some(auth_message.trim_end().to_string());
+          }
 
-            self
-              .send(Request::PostAuthMessageResponse { response: None })
-              .await;
-          },
-        }
+          self
+            .send(Request::PostAuthMessageResponse { response: None })
+            .await;
+        },
       },
 
       Response::Success => {
@@ -338,10 +326,10 @@ fn wrap_session_command<'a>(
 
       if *session_type == SessionType::X11 {
         if let Some(ref wrap) = greeter.xsession_wrapper {
-          return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
+          command = Cow::Owned(format!("{} {}", wrap, default.command()));
         }
       } else if let Some(ref wrap) = greeter.session_wrapper {
-        return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
+        command = Cow::Owned(format!("{} {}", wrap, default.command()));
       }
     },
 
@@ -349,7 +337,7 @@ fn wrap_session_command<'a>(
       // If a wrapper script is used, assume that it is able to set up the
       // required environment.
       if let Some(ref wrap) = greeter.session_wrapper {
-        return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
+        command = Cow::Owned(format!("{} {}", wrap, default.command()));
       }
       // Otherwise, set up the environment from the provided argument.
       if let Some(base_env) = default.env() {
@@ -358,7 +346,11 @@ fn wrap_session_command<'a>(
     },
   }
 
-  (Cow::Borrowed(default.command()), env)
+  if greeter.silent {
+    (Cow::Owned(format!("{command} >/dev/null 2>&1")), env)
+  } else {
+    (command, env)
+  }
 }
 
 #[cfg(test)]
@@ -433,12 +425,15 @@ mod test {
       wrap_session_command(&greeter, Some(&session), &default);
 
     assert_eq!(command.as_ref(), "startx Session1Cmd");
-    assert_eq!(env, vec![
-      "XDG_SESSION_DESKTOP=thede",
-      "DESKTOP_SESSION=thede",
-      "XDG_SESSION_TYPE=x11",
-      "XDG_CURRENT_DESKTOP=one:two:three"
-    ]);
+    assert_eq!(
+      env,
+      vec![
+        "XDG_SESSION_DESKTOP=thede",
+        "DESKTOP_SESSION=thede",
+        "XDG_SESSION_TYPE=x11",
+        "XDG_CURRENT_DESKTOP=one:two:three"
+      ]
+    );
   }
 
   #[test]
