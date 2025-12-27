@@ -56,7 +56,7 @@ impl Default for GeneralConfig {
 }
 
 /// Session management configuration
-#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SessionConfig {
   /// Override session with a specific command
   #[serde(default)]
@@ -81,6 +81,19 @@ pub struct SessionConfig {
   /// Environment variables for default session
   #[serde(default)]
   pub environments: Vec<String>,
+}
+
+impl Default for SessionConfig {
+  fn default() -> Self {
+    Self {
+      command:          None,
+      sessions_dirs:    default_sessions_dirs(),
+      xsessions_dirs:   default_xsessions_dirs(),
+      session_wrapper:  None,
+      xsession_wrapper: default_xsession_wrapper(),
+      environments:     Vec::new(),
+    }
+  }
 }
 
 /// Display and visual configuration

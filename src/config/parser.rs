@@ -610,4 +610,68 @@ power = 7
       },
     }
   }
+
+  #[test]
+  fn test_session_config_default_consistency() {
+    let default_config = Config::default();
+
+    println!("Default::default() SessionConfig:");
+    println!(
+      "  sessions_dirs: {:?}",
+      default_config.session.sessions_dirs
+    );
+    println!(
+      "  xsessions_dirs: {:?}",
+      default_config.session.xsessions_dirs
+    );
+    println!(
+      "  xsession_wrapper: {:?}",
+      default_config.session.xsession_wrapper
+    );
+
+    let empty_toml = r#""#;
+    let deserialized_config: Config =
+      toml::from_str(empty_toml).expect("Failed to parse empty TOML");
+
+    println!("\nDeserialized from empty TOML:");
+    println!(
+      "  sessions_dirs: {:?}",
+      deserialized_config.session.sessions_dirs
+    );
+    println!(
+      "  xsessions_dirs: {:?}",
+      deserialized_config.session.xsessions_dirs
+    );
+    println!(
+      "  xsession_wrapper: {:?}",
+      deserialized_config.session.xsession_wrapper
+    );
+
+    let partial_toml = r#"
+[session]
+command = "test"
+"#;
+    let partial_config: Config =
+      toml::from_str(partial_toml).expect("Failed to parse partial TOML");
+
+    println!("\nDeserialized with [session] present but fields missing:");
+    println!(
+      "  sessions_dirs: {:?}",
+      partial_config.session.sessions_dirs
+    );
+    println!(
+      "  xsessions_dirs: {:?}",
+      partial_config.session.xsessions_dirs
+    );
+    println!(
+      "  xsession_wrapper: {:?}",
+      partial_config.session.xsession_wrapper
+    );
+
+    assert_eq!(
+      default_config.session.sessions_dirs,
+      partial_config.session.sessions_dirs,
+      "Default and partially deserialized sessions_dirs should match"
+    );
+  }
 }
