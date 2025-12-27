@@ -466,7 +466,14 @@ impl Config {
 
   /// Validate that a wrapper command exists and is executable
   fn validate_wrapper_command(&self, command: &str) -> Result<(), ConfigError> {
-    let parts: Vec<&str> = command.split_whitespace().collect();
+    let trimmed = command.trim();
+    if trimmed.is_empty() {
+      return Err(ConfigError::WrapperExecutableNotFound(PathBuf::from(
+        command,
+      )));
+    }
+
+    let parts: Vec<&str> = trimmed.split_whitespace().collect();
     if let Some(executable) = parts.first() {
       // Check if it's an absolute path
       let path = PathBuf::from(executable);
@@ -708,6 +715,46 @@ shutdown = "poweroff"
     assert_eq!(
       default_config.power.use_setsid, partial_config.power.use_setsid,
       "Default and partially deserialized use_setsid should match"
+    );
+  }
+
+  #[test]
+  fn test_wrapper_validation_empty_string() {
+    let empty_wrapper = r#"
+[session]
+session_wrapper = ""
+"#;
+    
+    let mut config: Config =
+      toml::from_str(empty_wrapper).expect("Failed to parse TOML");
+    
+    config.session.xsession_wrapper = None;
+    
+    let result = config.validate(true);
+    
+    assert!(
+      result.is_err(),
+      "Empty wrapper command should fail validation"
+    );
+  }
+
+  #[test]
+  fn test_wrapper_validation_whitespace_only() {
+    let whitespace_wrapper = r#"
+[session]
+session_wrapper = "   "
+"#;
+    
+    let mut config: Config =
+      toml::from_str(whitespace_wrapper).expect("Failed to parse TOML");
+    
+    config.session.xsession_wrapper = None;
+    
+    let result = config.validate(true);
+    
+    assert!(
+      result.is_err(),
+      "Whitespace-only wrapper command should fail validation"
     );
   }
 }
