@@ -62,11 +62,7 @@ fn toml_error(
     for (i, line) in lines[context_start..context_end].iter().enumerate() {
       let actual_line_num = context_start + i + 1;
       if actual_line_num == line_num + 1 {
-        let prefix = format!(
-          "  > {:3}:{}  ",
-          actual_line_num,
-          col_num + 1
-        );
+        let prefix = format!("  > {:3}:{}  ", actual_line_num, col_num + 1);
         context_lines.push(format!("{}{}", prefix, line));
         // Add arrow pointing to error column if reasonable column position
         if col_num < 80 {
