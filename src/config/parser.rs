@@ -674,4 +674,40 @@ command = "test"
       "Default and partially deserialized sessions_dirs should match"
     );
   }
+
+  #[test]
+  fn test_power_config_default_consistency() {
+    let default_config = Config::default();
+
+    println!("Default::default() PowerConfig:");
+    println!("  shutdown: {:?}", default_config.power.shutdown);
+    println!("  reboot: {:?}", default_config.power.reboot);
+    println!("  use_setsid: {:?}", default_config.power.use_setsid);
+
+    let empty_toml = r#""#;
+    let deserialized_config: Config =
+      toml::from_str(empty_toml).expect("Failed to parse empty TOML");
+
+    println!("\nDeserialized from empty TOML:");
+    println!("  shutdown: {:?}", deserialized_config.power.shutdown);
+    println!("  reboot: {:?}", deserialized_config.power.reboot);
+    println!("  use_setsid: {:?}", deserialized_config.power.use_setsid);
+
+    let partial_toml = r#"
+[power]
+shutdown = "poweroff"
+"#;
+    let partial_config: Config =
+      toml::from_str(partial_toml).expect("Failed to parse partial TOML");
+
+    println!("\nDeserialized with [power] present but use_setsid missing:");
+    println!("  shutdown: {:?}", partial_config.power.shutdown);
+    println!("  reboot: {:?}", partial_config.power.reboot);
+    println!("  use_setsid: {:?}", partial_config.power.use_setsid);
+
+    assert_eq!(
+      default_config.power.use_setsid, partial_config.power.use_setsid,
+      "Default and partially deserialized use_setsid should match"
+    );
+  }
 }

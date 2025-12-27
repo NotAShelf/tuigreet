@@ -232,7 +232,7 @@ pub struct WidgetConfig {
 }
 
 /// Power management configuration
-#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct PowerConfig {
   /// Custom shutdown command
   #[serde(default)]
@@ -245,6 +245,16 @@ pub struct PowerConfig {
   /// Use setsid to detach power commands
   #[serde(default = "default_use_setsid")]
   pub use_setsid: bool,
+}
+
+impl Default for PowerConfig {
+  fn default() -> Self {
+    Self {
+      shutdown:   None,
+      reboot:     None,
+      use_setsid: default_use_setsid(),
+    }
+  }
 }
 
 /// Keybindings configuration
