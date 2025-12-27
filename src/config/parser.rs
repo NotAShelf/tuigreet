@@ -353,17 +353,21 @@ impl Config {
   /// Check for configuration warnings
   fn check_warnings(&self, warnings: &mut Vec<String>) {
     // Warn about excessively high padding values
-    if self.layout.window_padding > 10 {
+    if let Some(padding) = self.layout.window_padding
+      && padding > 10
+    {
       warnings.push(format!(
         "window_padding is very high ({}), this may cause display issues",
-        self.layout.window_padding
+        padding
       ));
     }
 
-    if self.layout.container_padding > 10 {
+    if let Some(padding) = self.layout.container_padding
+      && padding > 10
+    {
       warnings.push(format!(
         "container_padding is very high ({}), this may cause display issues",
-        self.layout.container_padding
+        padding
       ));
     }
 

@@ -444,9 +444,9 @@ impl Greeter {
 
     // Then check loaded config
     if let Some(ref config) = self.loaded_config
-      && config.layout.window_padding != 0
+      && let Some(padding) = config.layout.window_padding
     {
-      return config.layout.window_padding;
+      return padding;
     }
 
     0
@@ -464,9 +464,9 @@ impl Greeter {
 
     // Then check loaded config
     if let Some(ref config) = self.loaded_config
-      && config.layout.container_padding != 1
+      && let Some(padding) = config.layout.container_padding
     {
-      return config.layout.container_padding + 1;
+      return padding + 1;
     }
 
     2
@@ -483,9 +483,9 @@ impl Greeter {
 
     // Then check loaded config
     if let Some(ref config) = self.loaded_config
-      && config.layout.prompt_padding != 1
+      && let Some(padding) = config.layout.prompt_padding
     {
-      return config.layout.prompt_padding;
+      return padding;
     }
 
     1

@@ -142,7 +142,7 @@ pub fn apply_env_vars(config: &mut Config) {
 
   if let Ok(value) = env::var("TUIGREET_WINDOW_PADDING") {
     if let Ok(padding) = value.parse::<u16>() {
-      config.layout.window_padding = padding;
+      config.layout.window_padding = Some(padding);
     } else {
       tracing::warn!(
         "Invalid TUIGREET_WINDOW_PADDING value: '{}', expected number",
@@ -153,7 +153,7 @@ pub fn apply_env_vars(config: &mut Config) {
 
   if let Ok(value) = env::var("TUIGREET_CONTAINER_PADDING") {
     if let Ok(padding) = value.parse::<u16>() {
-      config.layout.container_padding = padding;
+      config.layout.container_padding = Some(padding);
     } else {
       tracing::warn!(
         "Invalid TUIGREET_CONTAINER_PADDING value: '{}', expected number",
@@ -164,7 +164,7 @@ pub fn apply_env_vars(config: &mut Config) {
 
   if let Ok(value) = env::var("TUIGREET_PROMPT_PADDING") {
     if let Ok(padding) = value.parse::<u16>() {
-      config.layout.prompt_padding = padding;
+      config.layout.prompt_padding = Some(padding);
     } else {
       tracing::warn!(
         "Invalid TUIGREET_PROMPT_PADDING value: '{}', expected number",

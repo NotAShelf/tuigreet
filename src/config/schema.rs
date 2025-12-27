@@ -179,15 +179,15 @@ pub struct LayoutConfig {
 
   /// Padding around the terminal window
   #[serde(default)]
-  pub window_padding: u16,
+  pub window_padding: Option<u16>,
 
   /// Padding inside the main container
-  #[serde(default = "default_container_padding")]
-  pub container_padding: u16,
+  #[serde(default)]
+  pub container_padding: Option<u16>,
 
   /// Padding between prompt rows
-  #[serde(default = "default_prompt_padding")]
-  pub prompt_padding: u16,
+  #[serde(default)]
+  pub prompt_padding: Option<u16>,
 
   /// Widget positioning options
   #[serde(default)]
@@ -198,9 +198,9 @@ impl Default for LayoutConfig {
   fn default() -> Self {
     Self {
       width:             default_width(),
-      window_padding:    0,
-      container_padding: default_container_padding(),
-      prompt_padding:    default_prompt_padding(),
+      window_padding:    None,
+      container_padding: None,
+      prompt_padding:    None,
       widgets:           WidgetConfig::default(),
     }
   }
@@ -356,14 +356,6 @@ fn default_secret_characters() -> String {
 
 fn default_width() -> u16 {
   80
-}
-
-fn default_container_padding() -> u16 {
-  1
-}
-
-fn default_prompt_padding() -> u16 {
-  1
 }
 
 fn default_use_setsid() -> bool {
