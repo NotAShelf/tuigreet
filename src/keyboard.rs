@@ -3,10 +3,10 @@ use std::{error::Error, sync::Arc};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use greetd_ipc::Request;
 use tokio::sync::RwLock;
+use tuigreet::Mode;
 
 use crate::{
   Greeter,
-  Mode,
   info::{
     delete_last_command,
     delete_last_session,
@@ -24,12 +24,18 @@ use crate::{
   },
 };
 
-// Act on keyboard events.
-//
-// This function will be called whenever a keyboard event was captured by the
-// application. It takes a reference to the `Greeter` so it can be aware of the
-// current state of the application and act accordinly; It also receives the
-// `Ipc` interface so it is able to interact with `greetd` if necessary.
+/// Handle keyboard input events.
+///
+/// Processes user input based on current application mode (username, password,
+/// menu navigation, etc).
+///
+/// # Arguments
+/// * `greeter` - Shared greeter state
+/// * `input` - Key event from terminal
+/// * `ipc` - IPC client for greetd communication
+///
+/// # Errors
+/// Returns error if IPC communication fails
 pub async fn handle(
   greeter: Arc<RwLock<Greeter>>,
   input: KeyEvent,
@@ -482,11 +488,11 @@ mod test {
 
   use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
   use tokio::sync::RwLock;
+  use tuigreet::Mode;
 
   use super::handle;
   use crate::{
     Greeter,
-    Mode,
     ipc::Ipc,
     ui::{common::masked::MaskedString, sessions::SessionSource},
   };

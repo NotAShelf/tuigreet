@@ -14,15 +14,34 @@ use notify::{
 };
 use tokio::sync::{RwLock, mpsc};
 use tracing::{debug, error, info, warn};
+use tuigreet::config::{Config, parser::load_config};
 
-use super::{Config, parser::load_config};
 use crate::{Greeter, event::Event as GreeterEvent};
 
+/// File watcher for hot-reloading configuration changes.
+///
+/// Keeps the watcher alive for the lifetime of the struct.
+/// Dropping this struct will stop file watching.
+#[allow(dead_code)]
 pub struct ConfigWatcher {
-  _watcher: RecommendedWatcher,
+  #[allow(dead_code)]
+  watcher: RecommendedWatcher,
 }
 
+#[allow(dead_code)]
 impl ConfigWatcher {
+  /// Create a new config file watcher.
+  ///
+  /// # Arguments
+  /// * `config_path` - Optional explicit config path, otherwise uses XDG/system paths
+  /// * `greeter` - Shared greeter state to update on config changes
+  /// * `event_sender` - Channel to send UI refresh events
+  ///
+  /// # Returns
+  /// ConfigWatcher that monitors the config file for changes
+  ///
+  /// # Errors
+  /// Returns error if file watcher cannot be initialized
   pub fn new(
     config_path: Option<PathBuf>,
     greeter: Arc<RwLock<Greeter>>,
@@ -114,7 +133,7 @@ impl ConfigWatcher {
       }
     });
 
-    Ok(ConfigWatcher { _watcher: watcher })
+    Ok(ConfigWatcher { watcher })
   }
 
   fn is_config_event(event: &Event, config_path: &Path) -> bool {
@@ -133,10 +152,8 @@ impl ConfigWatcher {
 
     let mut config = load_config(Some(config_path))?;
 
-    // Apply environment variables
-    super::env::apply_env_vars(&mut config);
+    tuigreet::config::env::apply_env_vars(&mut config);
 
-    // Validate config and log warnings
     match config.validate(false) {
       Ok(warnings) => {
         for warning in warnings {

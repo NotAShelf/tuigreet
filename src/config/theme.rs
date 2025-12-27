@@ -1,6 +1,14 @@
-use crate::{config::schema::ThemeConfig, ui::common::style::Theme};
+use crate::{config::schema::ThemeConfig, theme::Theme};
 
-/// Parse theme from TOML configuration
+/// Parse theme from TOML configuration.
+///
+/// # Arguments
+///
+/// * `theme_config` - Theme configuration from TOML file
+///
+/// # Returns
+///
+/// Theme with colors specified in config, defaulting unspecified elements
 pub fn theme_from_config(theme_config: &ThemeConfig) -> Theme {
   let mut theme = Theme::default();
 
@@ -46,7 +54,19 @@ pub fn theme_from_config(theme_config: &ThemeConfig) -> Theme {
   theme
 }
 
-/// Apply CLI theme string over config theme
+/// Apply CLI theme string over config theme.
+///
+/// CLI theme completely overrides config theme if present.
+///
+/// # Arguments
+///
+/// * `base_theme` - Theme from config file
+/// * `cli_theme_spec` - Optional theme string from CLI (e.g., "--theme
+///   border=blue;text=white")
+///
+/// # Returns
+///
+/// CLI theme if specified, otherwise base theme
 pub fn apply_cli_theme(
   mut base_theme: Theme,
   cli_theme_spec: Option<&str>,

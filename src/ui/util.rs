@@ -4,8 +4,9 @@ use tui::{
   text::Text,
   widgets::{Paragraph, Wrap},
 };
+use tuigreet::Mode;
 
-use crate::{Greeter, Mode};
+use crate::Greeter;
 
 pub fn titleize(message: &str) -> String {
   format!(" {message} ")
@@ -184,11 +185,11 @@ mod test {
     text::{Line, Span, Text},
     widgets::{Paragraph, Wrap},
   };
+  use tuigreet::Mode;
 
   use super::{get_input_width, get_rect_bounds};
   use crate::{
     Greeter,
-    Mode,
     ui::util::{get_greeting_height, get_height},
   };
 

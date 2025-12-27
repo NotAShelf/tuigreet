@@ -1,16 +1,21 @@
 use zeroize::Zeroize;
 
+/// String that can be masked for display (e.g., password fields).
 #[derive(Default)]
 pub struct MaskedString {
+  /// Actual value
   pub value: String,
+  /// Optional masked display value (e.g., "****")
   pub mask:  Option<String>,
 }
 
 impl MaskedString {
+  /// Create a new masked string.
   pub fn from(value: String, mask: Option<String>) -> MaskedString {
     MaskedString { value, mask }
   }
 
+  /// Get the display value (mask if present, otherwise actual value).
   pub fn get(&self) -> &str {
     match self.mask {
       Some(ref mask) => mask,
@@ -18,6 +23,7 @@ impl MaskedString {
     }
   }
 
+  /// Securely erase both value and mask from memory.
   pub fn zeroize(&mut self) {
     self.value.zeroize();
 
