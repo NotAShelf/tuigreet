@@ -416,7 +416,7 @@ mod test {
   #[test]
   fn x11_wrapper() {
     let mut greeter = Greeter::default();
-    greeter.xsession_wrapper = Some("startx /usr/bin/env".into());
+    greeter.xsession_wrapper = Some("startx".into());
 
     let session = Session {
       slug: Some("thede".to_string()),
@@ -432,7 +432,7 @@ mod test {
     let (command, env) =
       wrap_session_command(&greeter, Some(&session), &default);
 
-    assert_eq!(command.as_ref(), "startx /usr/bin/env Session1Cmd");
+    assert_eq!(command.as_ref(), "startx Session1Cmd");
     assert_eq!(env, vec![
       "XDG_SESSION_DESKTOP=thede",
       "DESKTOP_SESSION=thede",

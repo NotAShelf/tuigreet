@@ -339,7 +339,7 @@ fn default_xsessions_dirs() -> Vec<String> {
 }
 
 fn default_xsession_wrapper() -> Option<String> {
-  Some("startx /usr/bin/env".to_string())
+  Some("startx".to_string())
 }
 
 fn default_min_uid() -> u32 {

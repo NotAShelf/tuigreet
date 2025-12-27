@@ -52,7 +52,7 @@ const DEFAULT_ASTERISKS_CHARS: &str = "*";
 // We don't want to resolve the session command in the greeter though, so it
 // should be additionally wrapped with a known noop command (like
 // `/usr/bin/env`).
-const DEFAULT_XSESSION_WRAPPER: &str = "startx /usr/bin/env";
+const DEFAULT_XSESSION_WRAPPER: &str = "startx";
 
 #[derive(Debug, Copy, Clone)]
 pub enum AuthStatus {
@@ -1186,7 +1186,7 @@ mod test {
           assert_eq!(greeter.user_menu, true);
           assert!(matches!(
             greeter.xsession_wrapper.as_deref(),
-            Some("startx /usr/bin/env")
+            Some("startx")
           ));
         }),
       ),
