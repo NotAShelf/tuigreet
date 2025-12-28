@@ -699,6 +699,8 @@ impl Greeter {
     opts.optflag("", "no-config", "disable loading configuration files");
     opts.optflag("", "dump-config", "print effective configuration and exit");
 
+    opts.optflag("", "silent", "silence command output");
+
     opts
   }
 
@@ -988,6 +990,8 @@ impl Greeter {
     {
       self.xsession_wrapper = config.session.xsession_wrapper.clone();
     }
+
+     self.silent = self.config().opt_present("silent");
 
     // Display config
     if !self.config().opt_present("time") {
