@@ -123,6 +123,10 @@ pub struct DisplayConfig {
 /// Remember/cache configuration
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct RememberConfig {
+  /// Default user to pre-fill
+  #[serde(default)]
+  pub default_user: Option<String>,
+
   /// Remember last logged-in username
   #[serde(default)]
   pub username: bool,

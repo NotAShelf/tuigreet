@@ -96,13 +96,15 @@ pub struct Greeter {
   pub xsession_wrapper: Option<String>,
 
   // Whether user menu is enabled.
-  pub user_menu: bool,
+  pub user_menu:    bool,
   // Menu for user selection.
-  pub users:     Menu<User>,
+  pub users:        Menu<User>,
+  // Default user to pre-fill.
+  pub default_user: Option<String>,
   // Current username. Masked to display the full name if available.
-  pub username:  MaskedString,
+  pub username:     MaskedString,
   // Prompt that should be displayed to ask for entry.
-  pub prompt:    Option<String>,
+  pub prompt:       Option<String>,
 
   // Whether the current edition prompt should be hidden.
   pub asking_for_secret: bool,
@@ -168,6 +170,7 @@ impl Default for Greeter {
       xsession_wrapper:      None,
       user_menu:             false,
       users:                 Menu::default(),
+      default_user:          None,
       username:              MaskedString::default(),
       prompt:                None,
       asking_for_secret:     false,
@@ -302,6 +305,11 @@ impl Greeter {
       options:  sessions,
       selected: 0,
     };
+
+    // If a default user is specified, use it.
+    if let Some(ref default_user) = greeter.default_user {
+      greeter.username = MaskedString::from(default_user.clone(), None);
+    }
 
     // If we should remember the last logged-in user.
     if greeter.remember
@@ -589,6 +597,7 @@ impl Greeter {
       "custom strftime format for displaying date and time",
       "FORMAT",
     );
+    opts.optopt("u", "user", "pre-fill username field", "USER");
     opts.optflag("r", "remember", "remember last logged-in username");
     opts.optflag("", "remember-session", "remember last selected session");
     opts.optflag(
@@ -813,6 +822,7 @@ impl Greeter {
       return Err("--remember-session must be used with --remember".into());
     }
 
+    self.default_user = self.option("user");
     self.remember = self.config().opt_present("remember");
     self.remember_session = self.config().opt_present("remember-session");
     self.remember_user_session =
@@ -1001,6 +1011,12 @@ impl Greeter {
     }
 
     // Remember config
+    if !self.config().opt_present("user")
+      && config.remember.default_user.is_some()
+    {
+      self.default_user = config.remember.default_user.clone();
+    }
+
     if !self.config().opt_present("remember") {
       self.remember = config.remember.username;
     }
