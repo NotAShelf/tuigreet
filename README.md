@@ -28,7 +28,20 @@ hackable codebase suitable for future extension.
 
 ## Features
 
-TODO document features
+tuigreet provides a terminal-based authentication interface with session
+management, user selection, and power controls. The upstream project includes
+session launching from desktop files, username/session persistence, NSS-backed
+user menus, themeable UI components, and multi-language support.
+
+This fork, as per its motivation to maintain tuigreet with much-desired features
+and stability, extends the original with TOML-based configuration (supporting
+both user and system config files with hot-reload), environment variable mapping
+for all options, detailed error messages with source context for config issues,
+and exposes core functionality as a library.
+
+Additional, and perhaps less relevant, work includes NixOS VM-based integration
+tests, various bug fixes (session wrapper behavior, UID handling, padding
+semantics, status bar rendering) and so on.
 
 ## Usage
 
