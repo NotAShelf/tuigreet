@@ -33,7 +33,8 @@ impl ConfigWatcher {
   /// Create a new config file watcher.
   ///
   /// # Arguments
-  /// * `config_path` - Optional explicit config path, otherwise uses XDG/system paths
+  /// * `config_path` - Optional explicit config path, otherwise uses XDG/system
+  ///   paths
   /// * `greeter` - Shared greeter state to update on config changes
   /// * `event_sender` - Channel to send UI refresh events
   ///

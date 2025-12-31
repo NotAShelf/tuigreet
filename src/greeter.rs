@@ -213,14 +213,6 @@ impl Greeter {
 
     #[cfg(not(test))]
     {
-      match env::var("GREETD_SOCK") {
-        Ok(socket) => greeter.socket = socket,
-        Err(_) => {
-          eprintln!("GREETD_SOCK must be defined");
-          process::exit(1);
-        },
-      }
-
       let args = env::args().collect::<Vec<String>>();
 
       if let Err(err) = greeter.parse_options(&args).await {
@@ -388,8 +380,21 @@ impl Greeter {
 
   // Connect to `greetd` and return a stream we can safely write to.
   pub async fn connect(&mut self) {
+    // If socket is not already set (by tests), read from environment
+    if self.socket.is_empty() {
+      self.socket = match env::var("GREETD_SOCK") {
+        Ok(socket) => socket,
+        Err(_) => {
+          eprintln!("GREETD_SOCK must be defined");
+          process::exit(1);
+        },
+      };
+    }
+
     match UnixStream::connect(&self.socket).await {
-      Ok(stream) => self.stream = Some(Arc::new(RwLock::new(stream))),
+      Ok(stream) => {
+        self.stream = Some(Arc::new(RwLock::new(stream)));
+      },
 
       Err(err) => {
         eprintln!("{err}");

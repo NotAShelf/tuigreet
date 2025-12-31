@@ -7,8 +7,9 @@ use crate::config::{
 
 /// Apply environment variable overrides to configuration.
 ///
-/// Supported variables: TUIGREET_DEBUG, TUIGREET_LOG_FILE, TUIGREET_SESSION_COMMAND, etc.
-/// Invalid boolean values are logged as warnings and ignored.
+/// Supported variables: TUIGREET_DEBUG, TUIGREET_LOG_FILE,
+/// TUIGREET_SESSION_COMMAND, etc. Invalid boolean values are logged as warnings
+/// and ignored.
 pub fn apply_env_vars(config: &mut Config) {
   // General config
   if let Ok(value) = env::var("TUIGREET_DEBUG") {
