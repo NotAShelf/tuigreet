@@ -16,17 +16,23 @@ use crate::{
   },
 };
 
+/// Item that can be displayed in a menu.
 pub trait MenuItem {
+  /// Format the item for display.
   fn format(&self) -> Cow<'_, str>;
 }
 
+/// Generic menu widget for displaying selectable options.
 #[derive(Default)]
 pub struct Menu<T>
 where
   T: MenuItem,
 {
+  /// Menu title
   pub title:    String,
+  /// List of menu items
   pub options:  Vec<T>,
+  /// Currently selected index
   pub selected: usize,
 }
 
@@ -34,6 +40,11 @@ impl<T> Menu<T>
 where
   T: MenuItem,
 {
+  /// Draw the menu within a specified area.
+  ///
+  /// # Returns
+  ///
+  /// Tuple of `(cursor_x, cursor_y)` for the selected item
   pub fn draw_with_area(
     &self,
     greeter: &Greeter,

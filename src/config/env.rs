@@ -5,7 +5,10 @@ use crate::config::{
   schema::{AlignGreeting, SecretMode, WidgetPosition},
 };
 
-/// Apply environment variable overrides to configuration
+/// Apply environment variable overrides to configuration.
+///
+/// Supported variables: TUIGREET_DEBUG, TUIGREET_LOG_FILE, TUIGREET_SESSION_COMMAND, etc.
+/// Invalid boolean values are logged as warnings and ignored.
 pub fn apply_env_vars(config: &mut Config) {
   // General config
   if let Ok(value) = env::var("TUIGREET_DEBUG") {
@@ -381,7 +384,9 @@ pub fn apply_env_vars(config: &mut Config) {
   // Widget positioning configuration
   if let Ok(value) = env::var("TUIGREET_TIME_POSITION") {
     match value.to_lowercase().as_str() {
-      "default" => config.layout.widgets.time_position = WidgetPosition::Default,
+      "default" => {
+        config.layout.widgets.time_position = WidgetPosition::Default
+      },
       "top" => config.layout.widgets.time_position = WidgetPosition::Top,
       "bottom" => config.layout.widgets.time_position = WidgetPosition::Bottom,
       "hidden" => config.layout.widgets.time_position = WidgetPosition::Hidden,
@@ -401,8 +406,12 @@ pub fn apply_env_vars(config: &mut Config) {
         config.layout.widgets.status_position = WidgetPosition::Default
       },
       "top" => config.layout.widgets.status_position = WidgetPosition::Top,
-      "bottom" => config.layout.widgets.status_position = WidgetPosition::Bottom,
-      "hidden" => config.layout.widgets.status_position = WidgetPosition::Hidden,
+      "bottom" => {
+        config.layout.widgets.status_position = WidgetPosition::Bottom
+      },
+      "hidden" => {
+        config.layout.widgets.status_position = WidgetPosition::Hidden
+      },
       _ => {
         tracing::warn!(
           "Invalid TUIGREET_STATUS_POSITION value: '{}', expected 'default', \
@@ -495,10 +504,10 @@ mod tests {
     assert_eq!(config.theme.container, Some("green".to_string()));
 
     // Verify other env vars applied correctly (once, not per-component)
-    assert_eq!(
-      config.session.sessions_dirs,
-      vec!["/test".to_string(), "/usr/share".to_string()]
-    );
+    assert_eq!(config.session.sessions_dirs, vec![
+      "/test".to_string(),
+      "/usr/share".to_string()
+    ]);
     assert_eq!(config.display.align_greeting, AlignGreeting::Center);
 
     unsafe {

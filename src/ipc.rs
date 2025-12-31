@@ -12,11 +12,10 @@ use tokio::sync::{
   RwLock,
   mpsc::{Receiver, Sender},
 };
+use tuigreet::{AuthStatus, Mode};
 
 use crate::{
-  AuthStatus,
   Greeter,
-  Mode,
   event::Event,
   info::{
     delete_last_user_command,
@@ -29,15 +28,18 @@ use crate::{
   ui::sessions::{Session, SessionSource, SessionType},
 };
 
+/// IPC client for communicating with greetd.
 #[derive(Clone)]
 pub struct Ipc(Arc<IpcHandle>);
 
-pub struct IpcHandle {
+/// Internal IPC channel handle.
+pub(crate) struct IpcHandle {
   tx: RwLock<Sender<Request>>,
   rx: Mutex<Receiver<Request>>,
 }
 
 impl Ipc {
+  /// Create a new IPC client.
   pub fn new() -> Ipc {
     let (tx, rx) = tokio::sync::mpsc::channel::<Request>(10);
 
@@ -47,16 +49,27 @@ impl Ipc {
     }))
   }
 
+  /// Send a request to greetd.
   pub async fn send(&self, request: Request) {
     tracing::info!("sending request to greetd: {}", request.safe_repr());
 
-    let _ = self.0.tx.read().await.send(request).await;
+    if let Err(e) = self.0.tx.read().await.send(request).await {
+      tracing::warn!(
+        "failed to send request to greetd IPC channel: {} (request: {})",
+        e,
+        e.0.safe_repr()
+      );
+    }
   }
 
+  /// Receive next request from the queue.
   pub async fn next(&mut self) -> Option<Request> {
     self.0.rx.lock().await.recv().await
   }
 
+  /// Handle IPC communication with greetd daemon.
+  ///
+  /// Processes authentication flow and session management.
   pub async fn handle(
     &mut self,
     greeter: Arc<RwLock<Greeter>>,
@@ -93,7 +106,7 @@ impl Ipc {
     greeter: &mut Greeter,
     response: Response,
   ) -> Result<(), Box<dyn Error>> {
-    // Do not display actual message from greetd, which may contain entered
+    // XXX: Do not display actual message from greetd, which may contain entered
     // information, sometimes passwords.
     match response {
       Response::Error { ref error_type, .. } => {
@@ -247,8 +260,8 @@ impl Ipc {
       },
 
       Response::Error { error_type, .. } => {
-        // Do not display actual message from greetd, which may contain entered
-        // information, sometimes passwords.
+        // XXX: Do not display actual message from greetd, which may contain
+        // entered information, sometimes passwords.
         tracing::info!("received an error from greetd: {error_type:?}");
 
         Ipc::cancel(greeter).await;
@@ -265,7 +278,7 @@ impl Ipc {
           },
 
           ErrorType::Error => {
-            // Do not display actual message from greetd, which may contain
+            // XXX: Do not display actual message from greetd, which may contain
             // entered information, sometimes passwords.
             greeter.message =
               Some("An error was received from greetd".to_string());
@@ -311,7 +324,7 @@ fn wrap_session_command<'a>(
   let mut env: Vec<String> = vec![];
 
   match session {
-    // If the target is a defined session, we should be able to deduce all the
+    // If the target is a defined session, we *should* be able to deduce all the
     // environment we need from the desktop file.
     Some(Session {
       slug,

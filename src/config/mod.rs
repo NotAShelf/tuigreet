@@ -2,7 +2,6 @@ pub mod env;
 pub mod parser;
 mod schema;
 pub mod theme;
-pub mod watcher;
 
 use std::{fmt, io, path::PathBuf};
 

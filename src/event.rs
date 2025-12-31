@@ -12,20 +12,32 @@ use crate::AuthStatus;
 
 const FRAME_RATE: f64 = 2.0;
 
+/// Events that drive the UI event loop
 pub enum Event {
+  /// Keyboard input event
   Key(KeyEvent),
+
+  /// Render frame event
   Render,
+
+  /// Power command to execute
   PowerCommand(Command),
+
+  /// Exit with authentication status
   Exit(AuthStatus),
-  Refresh, // for config hot reload
+
+  /// UI refresh
+  Refresh,
 }
 
+/// Event channel for receiving terminal and internal events
 pub struct Events {
   rx: mpsc::Receiver<Event>,
   tx: mpsc::Sender<Event>,
 }
 
 impl Events {
+  /// Create a new event stream with keyboard and render events.
   pub async fn new() -> Events {
     let (tx, rx) = mpsc::channel(10);
 
@@ -37,7 +49,7 @@ impl Events {
         let mut stream = EventStream::new();
 
         // In tests, we are not capturing events from the terminal, so we need
-        // to replace the crossterm::EventStream with a dummy pending stream.
+        // to replace the `crossterm::EventStream` with a dummy pending stream.
         #[cfg(test)]
         let mut stream = futures::stream::pending::<Result<TermEvent, ()>>();
 
@@ -65,10 +77,12 @@ impl Events {
     Events { rx, tx }
   }
 
+  /// Get the next event from the stream.
   pub async fn next(&mut self) -> Option<Event> {
     self.rx.recv().await
   }
 
+  /// Get a sender for pushing events to the stream.
   pub fn sender(&self) -> Sender<Event> {
     self.tx.clone()
   }

@@ -22,11 +22,13 @@ use crate::{
   },
 };
 
+/// Cache file paths
 const LAST_USER_USERNAME: &str = "/var/cache/tuigreet/lastuser";
 const LAST_USER_NAME: &str = "/var/cache/tuigreet/lastuser-name";
 const LAST_COMMAND: &str = "/var/cache/tuigreet/lastsession";
 const LAST_SESSION: &str = "/var/cache/tuigreet/lastsession-path";
 
+/// Default UID range for user menu
 const DEFAULT_MIN_UID: u32 = 1000;
 const DEFAULT_MAX_UID: u32 = 60000;
 

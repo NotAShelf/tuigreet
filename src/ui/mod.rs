@@ -1,3 +1,5 @@
+//! UI rendering and component modules
+
 mod command;
 pub mod common;
 mod i18n;
@@ -27,17 +29,12 @@ use tui::{
   text::{Line, Span},
   widgets::Paragraph,
 };
+use tuigreet::{Mode, config::WidgetPosition};
 use util::buttonize;
 
 use self::common::style::{Theme, Themed};
 pub use self::i18n::MESSAGES;
-use crate::{
-  Greeter,
-  Mode,
-  config::WidgetPosition,
-  info::capslock_status,
-  ui::util::should_hide_cursor,
-};
+use crate::{Greeter, info::capslock_status, ui::util::should_hide_cursor};
 
 const STATUSBAR_LEFT_INDEX: usize = 1;
 const STATUSBAR_RIGHT_INDEX: usize = 2;
