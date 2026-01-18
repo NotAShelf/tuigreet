@@ -1,16 +1,19 @@
 use std::{process::Stdio, sync::Arc};
 
 use tokio::{process::Command, sync::RwLock};
+use tuigreet::Mode;
 
-use crate::{Greeter, Mode, event::Event, ui::power::Power};
+use crate::{Greeter, event::Event, ui::power::Power};
 
-#[derive(SmartDefault, Clone, Copy, PartialEq, Eq, Hash)]
+/// Power management options
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum PowerOption {
   #[default]
   Shutdown,
   Reboot,
 }
 
+/// Execute a power command (shutdown or reboot).
 pub async fn power(greeter: &mut Greeter, option: PowerOption) {
   let command = match greeter
     .powers

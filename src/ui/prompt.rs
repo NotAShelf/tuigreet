@@ -6,13 +6,11 @@ use tui::{
   text::Span,
   widgets::{Block, BorderType, Borders, Paragraph},
 };
+use tuigreet::{GreetAlign, Mode, SecretDisplay};
 
 use super::common::style::Themed;
 use crate::{
-  GreetAlign,
   Greeter,
-  Mode,
-  SecretDisplay,
   info::get_hostname,
   ui::{Frame, prompt_value, util::*},
 };

@@ -7,15 +7,12 @@ use tui::{
   layout::{Constraint, Direction, Layout, Rect},
   style::Color,
 };
-
-use crate::{
-  Greeter,
+use tuigreet::{
   Mode,
-  config::{Config, ThemeConfig, WidgetPosition},
-  integration::common::backend::TestBackend,
-  ui,
-  ui::common::style::{Theme, Themed},
+  config::{Config, WidgetPosition},
 };
+
+use crate::{Greeter, integration::common::backend::TestBackend, ui};
 
 /// Create a test greeter with default configuration
 fn test_greeter() -> Arc<RwLock<Greeter>> {

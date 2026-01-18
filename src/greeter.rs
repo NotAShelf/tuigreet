@@ -3,7 +3,6 @@ use std::{
   env,
   error::Error,
   ffi::OsStr,
-  fmt::{self, Display},
   path::PathBuf,
   process,
   sync::Arc,
@@ -20,6 +19,16 @@ use tokio::{
   sync::{RwLock, RwLockWriteGuard, mpsc::Sender},
 };
 use tracing_appender::non_blocking::WorkerGuard;
+use tuigreet::{
+  AuthStatus,
+  DEFAULT_ASTERISKS_CHARS,
+  DEFAULT_LOG_FILE,
+  DEFAULT_XSESSION_WRAPPER,
+  GreetAlign,
+  Mode,
+  SecretDisplay,
+  Theme,
+};
 use zeroize::Zeroize;
 
 use crate::{
@@ -38,90 +47,25 @@ use crate::{
   },
   power::PowerOption,
   ui::{
-    common::{masked::MaskedString, menu::Menu, style::Theme},
+    common::{masked::MaskedString, menu::Menu},
     power::Power,
     sessions::{Session, SessionSource, SessionType},
     users::User,
   },
 };
 
-const DEFAULT_LOG_FILE: &str = "/tmp/tuigreet.log";
 const DEFAULT_LOCALE: Locale = Locale::en_US;
-const DEFAULT_ASTERISKS_CHARS: &str = "*";
-// `startx` wants an absolute path to the executable as a first argument.
-// We don't want to resolve the session command in the greeter though, so it
-// should be additionally wrapped with a known noop command (like
-// `/usr/bin/env`).
-const DEFAULT_XSESSION_WRAPPER: &str = "startx";
 
-#[derive(Debug, Copy, Clone)]
-pub enum AuthStatus {
-  Success,
-  Failure,
-  Cancel,
-}
-
-impl Display for AuthStatus {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "{:?}", self)
-  }
-}
-
-impl Error for AuthStatus {}
-
-// A mode represents the large section of the software, usually screens to be
-// displayed, or the state of the application.
-#[derive(SmartDefault, Debug, Copy, Clone, PartialEq)]
-pub enum Mode {
-  #[default]
-  Username,
-  Password,
-  Action,
-  Users,
-  Command,
-  Sessions,
-  Power,
-  Processing,
-}
-
-// This enum models how secret values should be displayed on terminal.
-#[derive(SmartDefault, Debug, Clone)]
-pub enum SecretDisplay {
-  #[default]
-  // All characters hidden.
-  Hidden,
-  // All characters are replaced by a placeholder character.
-  Character(String),
-}
-
-impl SecretDisplay {
-  pub fn show(&self) -> bool {
-    match self {
-      SecretDisplay::Hidden => false,
-      SecretDisplay::Character(_) => true,
-    }
-  }
-}
-
-// This enum models text alignment options
-#[derive(SmartDefault, Debug, Clone)]
-pub enum GreetAlign {
-  #[default]
-  Center,
-  Left,
-  Right,
-}
-
-#[derive(SmartDefault)]
+/// Core greeter state managing authentication, UI, and session selection.
 pub struct Greeter {
   pub debug:   bool,
   pub logfile: String,
   pub logger:  Option<WorkerGuard>,
 
-  #[default(DEFAULT_LOCALE)]
   pub locale:        Locale,
   pub config:        Option<Matches>,
-  pub loaded_config: Option<crate::config::Config>, // store loaded TOML config
+  pub loaded_config: Option<tuigreet::config::Config>, /* store loaded TOML
+                                                        * config */
   pub socket:        String,
   pub stream:        Option<Arc<RwLock<UnixStream>>>,
   pub events:        Option<Sender<Event>>,
@@ -152,13 +96,15 @@ pub struct Greeter {
   pub xsession_wrapper: Option<String>,
 
   // Whether user menu is enabled.
-  pub user_menu: bool,
+  pub user_menu:    bool,
   // Menu for user selection.
-  pub users:     Menu<User>,
+  pub users:        Menu<User>,
+  // Default user to pre-fill.
+  pub default_user: Option<String>,
   // Current username. Masked to display the full name if available.
-  pub username:  MaskedString,
+  pub username:     MaskedString,
   // Prompt that should be displayed to ask for entry.
-  pub prompt:    Option<String>,
+  pub prompt:       Option<String>,
 
   // Whether the current edition prompt should be hidden.
   pub asking_for_secret: bool,
@@ -188,11 +134,8 @@ pub struct Greeter {
   // Whether to prefix the power commands with `setsid`.
   pub power_setsid: bool,
 
-  #[default(2)]
   pub kb_command:  u8,
-  #[default(3)]
   pub kb_sessions: u8,
-  #[default(12)]
   pub kb_power:    u8,
 
   // The software is waiting for a response from `greetd`.
@@ -201,6 +144,55 @@ pub struct Greeter {
   pub done:    bool,
   // Should we exit?
   pub exit:    Option<AuthStatus>,
+}
+
+impl Default for Greeter {
+  fn default() -> Self {
+    Self {
+      debug:                 false,
+      logfile:               DEFAULT_LOG_FILE.to_string(),
+      logger:                None,
+      locale:                DEFAULT_LOCALE,
+      config:                None,
+      loaded_config:         None,
+      socket:                String::new(),
+      stream:                None,
+      events:                None,
+      mode:                  Mode::default(),
+      previous_mode:         Mode::default(),
+      cursor_offset:         0,
+      previous_buffer:       None,
+      buffer:                String::new(),
+      session_source:        SessionSource::default(),
+      session_paths:         Vec::new(),
+      sessions:              Menu::default(),
+      session_wrapper:       None,
+      xsession_wrapper:      None,
+      user_menu:             false,
+      users:                 Menu::default(),
+      default_user:          None,
+      username:              MaskedString::default(),
+      prompt:                None,
+      asking_for_secret:     false,
+      secret_display:        SecretDisplay::default(),
+      remember:              false,
+      remember_session:      false,
+      remember_user_session: false,
+      theme:                 Theme::default(),
+      time:                  false,
+      time_format:           None,
+      greeting:              None,
+      message:               None,
+      powers:                Menu::default(),
+      power_setsid:          false,
+      kb_command:            2,
+      kb_sessions:           3,
+      kb_power:              12,
+      working:               false,
+      done:                  false,
+      exit:                  None,
+    }
+  }
 }
 
 impl Drop for Greeter {
@@ -224,14 +216,6 @@ impl Greeter {
 
     #[cfg(not(test))]
     {
-      match env::var("GREETD_SOCK") {
-        Ok(socket) => greeter.socket = socket,
-        Err(_) => {
-          eprintln!("GREETD_SOCK must be defined");
-          process::exit(1);
-        },
-      }
-
       let args = env::args().collect::<Vec<String>>();
 
       if let Err(err) = greeter.parse_options(&args).await {
@@ -247,10 +231,10 @@ impl Greeter {
           .config()
           .opt_str("config")
           .map(std::path::PathBuf::from);
-        match crate::config::parser::load_config(config_path.as_deref()) {
+        match tuigreet::config::parser::load_config(config_path.as_deref()) {
           Ok(mut config) => {
             // Apply environment variables
-            crate::config::env::apply_env_vars(&mut config);
+            tuigreet::config::env::apply_env_vars(&mut config);
 
             // Validate config
             match config.validate(false) {
@@ -313,6 +297,11 @@ impl Greeter {
       options:  sessions,
       selected: 0,
     };
+
+    // If a default user is specified, use it.
+    if let Some(ref default_user) = greeter.default_user {
+      greeter.username = MaskedString::from(default_user.clone(), None);
+    }
 
     // If we should remember the last logged-in user.
     if greeter.remember
@@ -399,8 +388,21 @@ impl Greeter {
 
   // Connect to `greetd` and return a stream we can safely write to.
   pub async fn connect(&mut self) {
+    // If socket is not already set (by tests), read from environment
+    if self.socket.is_empty() {
+      self.socket = match env::var("GREETD_SOCK") {
+        Ok(socket) => socket,
+        Err(_) => {
+          eprintln!("GREETD_SOCK must be defined");
+          process::exit(1);
+        },
+      };
+    }
+
     match UnixStream::connect(&self.socket).await {
-      Ok(stream) => self.stream = Some(Arc::new(RwLock::new(stream))),
+      Ok(stream) => {
+        self.stream = Some(Arc::new(RwLock::new(stream)));
+      },
 
       Err(err) => {
         eprintln!("{err}");
@@ -600,6 +602,7 @@ impl Greeter {
       "custom strftime format for displaying date and time",
       "FORMAT",
     );
+    opts.optopt("u", "user", "pre-fill username field", "USER");
     opts.optflag("r", "remember", "remember last logged-in username");
     opts.optflag("", "remember-session", "remember last selected session");
     opts.optflag(
@@ -826,6 +829,7 @@ impl Greeter {
       return Err("--remember-session must be used with --remember".into());
     }
 
+    self.default_user = self.option("user");
     self.remember = self.config().opt_present("remember");
     self.remember_session = self.config().opt_present("remember-session");
     self.remember_user_session =
@@ -939,8 +943,8 @@ impl Greeter {
   }
 
   // Apply configuration settings to the greeter, respecting CLI overrides
-  pub fn apply_config(&mut self, config: &crate::config::Config) {
-    use crate::{config::SecretMode, ui::sessions::SessionSource};
+  pub fn apply_config(&mut self, config: &tuigreet::config::Config) {
+    use tuigreet::config::SecretMode;
 
     // Only apply config values if CLI didn't override them
     // General config
@@ -956,9 +960,7 @@ impl Greeter {
       self.session_source = SessionSource::DefaultCommand(cmd.clone(), None);
     }
 
-    if !self.config().opt_present("sessions")
-      && !config.session.sessions_dirs.is_empty()
-    {
+    if !self.config().opt_present("sessions") {
       self
         .session_paths
         .extend(config.session.sessions_dirs.iter().map(|dir| {
@@ -969,9 +971,7 @@ impl Greeter {
         }));
     }
 
-    if !self.config().opt_present("xsessions")
-      && !config.session.xsessions_dirs.is_empty()
-    {
+    if !self.config().opt_present("xsessions") {
       self
         .session_paths
         .extend(config.session.xsessions_dirs.iter().map(|dir| {
@@ -1016,6 +1016,12 @@ impl Greeter {
     }
 
     // Remember config
+    if !self.config().opt_present("user")
+      && config.remember.default_user.is_some()
+    {
+      self.default_user = config.remember.default_user.clone();
+    }
+
     if !self.config().opt_present("remember") {
       self.remember = config.remember.username;
     }
@@ -1106,10 +1112,10 @@ impl Greeter {
   // Apply theme configuration
   pub fn apply_theme_config(
     &mut self,
-    theme_config: &crate::config::ThemeConfig,
+    theme_config: &tuigreet::config::ThemeConfig,
     cli_theme: Option<&str>,
   ) {
-    use crate::config::theme::{apply_cli_theme, theme_from_config};
+    use tuigreet::config::theme::{apply_cli_theme, theme_from_config};
 
     // Start with theme from config
     let config_theme = theme_from_config(theme_config);
@@ -1139,7 +1145,9 @@ fn print_version() {
 
 #[cfg(test)]
 mod test {
-  use crate::{Greeter, SecretDisplay, ui::sessions::SessionSource};
+  use tuigreet::SecretDisplay;
+
+  use crate::{Greeter, ui::sessions::SessionSource};
 
   #[test]
   fn test_prompt_width() {
@@ -1290,7 +1298,7 @@ mod test {
     assert_eq!(greeter.kb_sessions, 5);
     assert_eq!(greeter.kb_power, 12);
 
-    let mut config = crate::config::Config::default();
+    let mut config = tuigreet::config::Config::default();
     config.keybindings.command = 5;
     config.keybindings.sessions = 3;
     config.keybindings.power = 7;

@@ -6,13 +6,13 @@ use std::{
 use super::common::menu::MenuItem;
 use crate::Greeter;
 
-// SessionSource models the selected session and where it comes from.
+// `SessionSource` models the selected session and where it comes from.
 //
 // A session can either come from a free-form command or an XDG-defined session
 // file. Each variant contains a reference to the data required to create a
 // session, either the String of the command or the index of the session in the
 // session list.
-#[derive(SmartDefault)]
+#[derive(Default)]
 pub enum SessionSource {
   #[default]
   None,
@@ -75,7 +75,7 @@ impl SessionSource {
 }
 
 // Represents the XDG type of the selected session.
-#[derive(SmartDefault, Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub enum SessionType {
   X11,
   Wayland,
@@ -98,21 +98,26 @@ impl SessionType {
 }
 
 // A session, as defined by an XDG session file.
-#[derive(SmartDefault, Clone)]
+#[derive(Clone, Default)]
 pub struct Session {
   // Slug of the session, being the name of the desktop file without its
   // extension.
-  pub slug:              Option<String>,
+  pub slug: Option<String>,
+
   // Human-friendly name for the session, maps to the `Name` attribute.
-  pub name:              String,
+  pub name: String,
+
   // Command used to start the session, maps to the `Exec` attribute.
-  pub command:           String,
+  pub command: String,
+
   // XDG session type for the session, detected from the location of the
   // session file.
-  pub session_type:      SessionType,
+  pub session_type: SessionType,
+
   // Path to the session file. Used to uniquely identify sessions, since names
   // and commands can be identital between two different sessions.
-  pub path:              Option<PathBuf>,
+  pub path: Option<PathBuf>,
+
   // Desktop names as defined with the `DesktopNames` desktop file property
   pub xdg_desktop_names: Option<String>,
 }
@@ -189,7 +194,7 @@ mod test {
 
     let session = Session::from_path(&greeter, "/Session2Path");
 
-    assert!(matches!(session, Some(_)));
+    assert!(session.is_some());
     assert_eq!(session.unwrap().name, "Session2");
     assert_eq!(session.unwrap().session_type, SessionType::X11);
   }
@@ -213,14 +218,14 @@ mod test {
 
     let session = Session::from_path(&greeter, "/Session2Path");
 
-    assert!(matches!(session, None));
+    assert!(session.is_none());
   }
 
   #[test]
   fn no_session() {
     let greeter = Greeter::default();
 
-    assert!(matches!(Session::get_selected(&greeter), None));
+    assert!(Session::get_selected(&greeter).is_none());
   }
 
   #[test]
@@ -251,7 +256,7 @@ mod test {
 
     let session = Session::get_selected(&greeter);
 
-    assert!(matches!(session, Some(_)));
+    assert!(session.is_some());
     assert_eq!(session.unwrap().name, "Session2");
     assert_eq!(session.unwrap().session_type, SessionType::X11);
   }
@@ -284,7 +289,7 @@ mod test {
 
     let session = Session::get_selected(&greeter);
 
-    assert!(matches!(session, Some(_)));
+    assert!(session.is_some());
     assert_eq!(session.unwrap().name, "Session");
     assert_eq!(session.unwrap().session_type, SessionType::X11);
     assert_eq!(session.unwrap().command, "Session2Cmd");

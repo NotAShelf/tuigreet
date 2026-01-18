@@ -8,7 +8,20 @@ use dirs::config_dir;
 
 use crate::config::{Config, ConfigError};
 
-/// Load configuration from the appropriate paths
+/// Load configuration from CLI path, user config, or system config.
+///
+/// # Arguments
+///
+/// * `cli_config_path` - Optional explicit config file path from CLI
+///
+/// # Returns
+///
+/// Merged configuration from system and user configurations, or CLI config if
+/// specified
+///
+/// # Errors
+///
+/// Returns error if config file cannot be read or parsed
 pub fn load_config(
   cli_config_path: Option<&Path>,
 ) -> Result<Config, ConfigError> {
@@ -32,7 +45,11 @@ pub fn load_config(
   Ok(config)
 }
 
-/// Load configuration from a specific path
+/// Load configuration from a specific path.
+///
+/// # Errors
+///
+/// Returns error if file cannot be read or contains invalid TOML
 fn load_config_from_path(path: &Path) -> Result<Config, ConfigError> {
   let content = fs::read_to_string(path)?;
   match toml::from_str::<Config>(&content) {
@@ -41,7 +58,17 @@ fn load_config_from_path(path: &Path) -> Result<Config, ConfigError> {
   }
 }
 
-/// Create an enhanced TOML error with file/line context
+/// Create a TOML error with file/line context for better error messages.
+///
+/// # Arguments
+///
+/// * `path` - Path to the config file
+/// * `content` - Full file content
+/// * `original_error` - TOML parsing error
+///
+/// # Returns
+///
+/// [`ConfigError`] with line numbers and additiona context
 fn toml_error(
   path: &Path,
   content: &str,
@@ -88,7 +115,7 @@ fn toml_error(
   ConfigError::Parse(original_error)
 }
 
-/// Load system configuration from /etc/tuigreet/config.toml
+/// Load system configuration from /etc/tuigreet/config.toml.
 fn load_system_config() -> Result<Config, ConfigError> {
   let path = PathBuf::from("/etc/tuigreet/config.toml");
   if path.exists() {
@@ -99,6 +126,7 @@ fn load_system_config() -> Result<Config, ConfigError> {
 }
 
 /// Load user configuration from XDG config directory
+/// (`~/.config/tuigreet/config.toml`).
 fn load_user_config() -> Result<Config, ConfigError> {
   if let Some(config_dir) = config_dir() {
     let path = config_dir.join("tuigreet").join("config.toml");
@@ -109,8 +137,10 @@ fn load_user_config() -> Result<Config, ConfigError> {
   Ok(Config::default())
 }
 
-/// Merge a source config into a destination config, and preserve non-default
-/// values
+/// Merge source config into destination, preserving non-default values from
+/// source.
+///
+/// Only overwrites destination fields if source value differs from default.
 pub fn merge_configs(dest: &mut Config, src: Config) {
   let defaults = Config::default();
 
@@ -518,22 +548,9 @@ fn is_executable(path: &Path) -> bool {
 fn command_exists(command: &str) -> bool {
   if let Ok(path) = std::env::var("PATH") {
     for dir in std::env::split_paths(&path) {
-      #[cfg(windows)]
-      let mut full_path = dir.join(command);
-      #[cfg(not(windows))]
       let full_path = dir.join(command);
       if full_path.exists() && is_executable(&full_path) {
         return true;
-      }
-      // Also try with common executable extensions on Windows
-      #[cfg(windows)]
-      {
-        for ext in &[".exe", ".bat", ".cmd"] {
-          full_path.set_extension(ext);
-          if full_path.exists() {
-            return true;
-          }
-        }
       }
     }
   }
@@ -724,14 +741,14 @@ shutdown = "poweroff"
 [session]
 session_wrapper = ""
 "#;
-    
+
     let mut config: Config =
       toml::from_str(empty_wrapper).expect("Failed to parse TOML");
-    
+
     config.session.xsession_wrapper = None;
-    
+
     let result = config.validate(true);
-    
+
     assert!(
       result.is_err(),
       "Empty wrapper command should fail validation"
@@ -744,14 +761,14 @@ session_wrapper = ""
 [session]
 session_wrapper = "   "
 "#;
-    
+
     let mut config: Config =
       toml::from_str(whitespace_wrapper).expect("Failed to parse TOML");
-    
+
     config.session.xsession_wrapper = None;
-    
+
     let result = config.validate(true);
-    
+
     assert!(
       result.is_err(),
       "Whitespace-only wrapper command should fail validation"

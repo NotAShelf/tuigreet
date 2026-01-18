@@ -11,6 +11,15 @@ build = "build.rs"
 rust-version = "1.90"
 repository = "https://github.com/notashelf/tuigreet"
 
+[lib]
+name = "tuigreet"
+path = "src/lib.rs"
+crate-type = ["rlib"]
+
+[[bin]]
+name = "tuigreet"
+path = "src/main.rs"
+
 [features]
 default = []
 nsswrapper = []
@@ -34,7 +43,6 @@ tui = { package = "ratatui", version = "0.29.0", default-features = false, featu
 ] }
 rust-embed = "8.9.0"
 rust-ini = "0.21.3"
-smart-default = "0.7.1"
 tokio = { version = "1.48.0", default-features = false, features = [
   "macros",
   "rt-multi-thread",

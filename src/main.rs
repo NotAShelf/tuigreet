@@ -1,9 +1,6 @@
-#[macro_use] extern crate smart_default;
-
 #[macro_use]
 mod macros;
 
-mod config;
 mod event;
 mod greeter;
 mod info;
@@ -11,6 +8,7 @@ mod ipc;
 mod keyboard;
 mod power;
 mod ui;
+mod watcher;
 
 #[cfg(test)] mod integration;
 
@@ -28,6 +26,7 @@ use power::PowerPostAction;
 use tokio::sync::RwLock;
 use tracing_appender::non_blocking::WorkerGuard;
 use tui::{Terminal, backend::CrosstermBackend};
+use tuigreet::AuthStatus;
 
 pub use self::greeter::*;
 use self::{event::Events, ipc::Ipc};
@@ -100,7 +99,7 @@ where
         .map(std::path::PathBuf::from)
     };
 
-    match crate::config::watcher::ConfigWatcher::new(
+    match crate::watcher::ConfigWatcher::new(
       config_path,
       greeter.clone(),
       events.sender(),
