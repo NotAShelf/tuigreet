@@ -20,6 +20,9 @@ tuigreet - A graphical console greeter for greetd
 	Enables debug logging to the provided FILE path, or to /tmp/tuigreet.log if no
 	file is specified.
 
+*-q, --quiet*
+	Enables quiet launch - no longer shows a bunch of logs when booting into session
+
 *-c, --cmd CMD*
 	Specify which command to run on successful authentication. This can be
 	overridden by manual selection within *tuigreet*.

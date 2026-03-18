@@ -173,6 +173,8 @@ pub struct Greeter {
   pub done:    bool,
   // Should we exit?
   pub exit:    Option<AuthStatus>,
+  // Should we have quiet command output?
+  pub quiet:   bool,
 }
 
 impl Default for Greeter {
@@ -234,6 +236,7 @@ impl Default for Greeter {
       working:                    false,
       done:                       false,
       exit:                       None,
+      quiet:                      false,
     }
   }
 }
@@ -637,6 +640,7 @@ impl Greeter {
       "FILE",
     );
     opts.optopt("c", "cmd", "command to run", "COMMAND");
+    opts.optflag("q", "quiet", "enable quiet launch");
     opts.optmulti(
       "",
       "env",
@@ -926,6 +930,8 @@ impl Greeter {
           .into(),
       );
     }
+
+    self.quiet = self.config().opt_present("quiet");
 
     if self.config().opt_present("theme")
       && let Some(spec) = self.config().opt_str("theme")
@@ -1316,6 +1322,7 @@ impl Greeter {
     // General
     self.debug = config.general.debug;
     self.logfile.clone_from(&config.general.log_file);
+    self.quiet = config.general.quiet;
     // Session
     self.session_source = config.session.command.as_ref().map_or_else(
       SessionSource::default,
