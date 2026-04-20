@@ -45,7 +45,7 @@ tokio = { version = "1.48.0", default-features = false, features = [
   "time",
   "process",
 ] }
-toml = "1.0.3"
+toml = "1.1.2"
 tracing = "0.1.44"
 tracing-appender = "0.2.4"
 tracing-subscriber = "0.3.22"
