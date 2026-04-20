@@ -22,7 +22,7 @@ default    = [  ]
 nsswrapper = [  ]
 
 [dependencies]
-ansi-to-tui = "7.0.0"
+ansi-to-tui = "8.0.1"
 chrono = { version = "0.4.42", features = [ "unstable-locales" ] }
 crossterm = { version = "0.29.0", features = [ "event-stream" ] }
 dirs = "6.0.0"
