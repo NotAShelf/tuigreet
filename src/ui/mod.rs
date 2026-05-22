@@ -175,35 +175,78 @@ where
       let session_source =
         greeter.session_source.label(&greeter).unwrap_or("-");
 
-      let status_left_text = Line::from(vec![
-        status_label(theme, "ESC"),
-        status_value(&greeter, theme, Button::Other, fl!("action_reset")),
-        Span::from(" "),
-        status_label(theme, format!("F{}", greeter.kb_command)),
-        status_value(&greeter, theme, Button::Command, fl!("action_command")),
-        Span::from(" "),
-        status_label(theme, format!("F{}", greeter.kb_sessions)),
-        status_value(&greeter, theme, Button::Session, fl!("action_session")),
-        Span::from(" "),
-        status_label(theme, format!("F{}", greeter.kb_power)),
-        status_value(&greeter, theme, Button::Power, fl!("action_power")),
-        Span::from(" "),
-        status_label(theme, format!("F{}", greeter.kb_background)),
-        status_value(
+      let mut status_spans: Vec<Span> = vec![];
+
+      if greeter.status_show_reset {
+        status_spans.push(status_label(theme, "ESC"));
+        status_spans.push(status_value(
+          &greeter,
+          theme,
+          Button::Other,
+          fl!("action_reset"),
+        ));
+        status_spans.push(Span::from(" "));
+      }
+      if greeter.status_show_command {
+        status_spans
+          .push(status_label(theme, format!("F{}", greeter.kb_command)));
+        status_spans.push(status_value(
+          &greeter,
+          theme,
+          Button::Command,
+          fl!("action_command"),
+        ));
+        status_spans.push(Span::from(" "));
+      }
+      if greeter.status_show_session {
+        status_spans
+          .push(status_label(theme, format!("F{}", greeter.kb_sessions)));
+        status_spans.push(status_value(
+          &greeter,
+          theme,
+          Button::Session,
+          fl!("action_session"),
+        ));
+        status_spans.push(Span::from(" "));
+      }
+      if greeter.status_show_power {
+        status_spans
+          .push(status_label(theme, format!("F{}", greeter.kb_power)));
+        status_spans.push(status_value(
+          &greeter,
+          theme,
+          Button::Power,
+          fl!("action_power"),
+        ));
+        status_spans.push(Span::from(" "));
+      }
+      if greeter.status_show_background {
+        status_spans
+          .push(status_label(theme, format!("F{}", greeter.kb_background)));
+        status_spans.push(status_value(
           &greeter,
           theme,
           Button::Background,
           fl!("action_background"),
-        ),
-        Span::from(" "),
-        status_label(theme, session_source_label),
-        status_value(&greeter, theme, Button::Other, session_source),
-      ]);
+        ));
+        status_spans.push(Span::from(" "));
+      }
+      if greeter.status_show_session_status {
+        status_spans.push(status_label(theme, session_source_label));
+        status_spans.push(status_value(
+          &greeter,
+          theme,
+          Button::Other,
+          session_source,
+        ));
+      }
+
+      let status_left_text = Line::from(status_spans);
       let status_left = Paragraph::new(status_left_text);
 
       f.render_widget(status_left, status_chunks[STATUSBAR_LEFT_INDEX]);
 
-      if capslock_status() {
+      if greeter.status_show_caps_lock && capslock_status() {
         let status_right_text = status_label(theme, fl!("status_caps"));
         let status_right =
           Paragraph::new(status_right_text).alignment(Alignment::Right);

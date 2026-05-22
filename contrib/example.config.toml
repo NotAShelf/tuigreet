@@ -98,6 +98,23 @@ time_position = "default"
 # Position of status bar widget: "default", "top", "bottom", "hidden"
 status_position = "default"
 
+# Status bar item visibility
+[layout.widgets.status_bar]
+# Show the ESC/Reset button
+show_reset = true
+# Show the command button (F2)
+show_command = true
+# Show the session button (F3)
+show_session = true
+# Show the power button (F12)
+show_power = true
+# Show the background button (F4)
+show_background = true
+# Show the current session/command indicator
+show_session_status = true
+# Show the caps lock indicator
+show_caps_lock = true
+
 [power]
 # Custom shutdown command
 # shutdown = "sudo systemctl poweroff"

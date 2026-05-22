@@ -435,6 +435,36 @@ pub fn load_env_variables() -> Config {
     }
   }
 
+  // Status bar item visibility
+  if let Ok(value) = env::var("TUIGREET_STATUS_SHOW_RESET") {
+    config.layout.widgets.status_bar.show_reset =
+      value.to_lowercase() == "true";
+  }
+  if let Ok(value) = env::var("TUIGREET_STATUS_SHOW_COMMAND") {
+    config.layout.widgets.status_bar.show_command =
+      value.to_lowercase() == "true";
+  }
+  if let Ok(value) = env::var("TUIGREET_STATUS_SHOW_SESSION") {
+    config.layout.widgets.status_bar.show_session =
+      value.to_lowercase() == "true";
+  }
+  if let Ok(value) = env::var("TUIGREET_STATUS_SHOW_POWER") {
+    config.layout.widgets.status_bar.show_power =
+      value.to_lowercase() == "true";
+  }
+  if let Ok(value) = env::var("TUIGREET_STATUS_SHOW_BACKGROUND") {
+    config.layout.widgets.status_bar.show_background =
+      value.to_lowercase() == "true";
+  }
+  if let Ok(value) = env::var("TUIGREET_STATUS_SHOW_SESSION_STATUS") {
+    config.layout.widgets.status_bar.show_session_status =
+      value.to_lowercase() == "true";
+  }
+  if let Ok(value) = env::var("TUIGREET_STATUS_SHOW_CAPS_LOCK") {
+    config.layout.widgets.status_bar.show_caps_lock =
+      value.to_lowercase() == "true";
+  }
+
   // Individual theme component environment variables
   if let Ok(value) = env::var("TUIGREET_THEME_BORDER") {
     config.theme.border = Some(value);

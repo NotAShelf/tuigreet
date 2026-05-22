@@ -334,6 +334,56 @@ pub struct WidgetConfig {
   /// Position of status bar widget
   #[serde(default)]
   pub status_position: WidgetPosition,
+
+  /// Status bar item visibility
+  #[serde(default)]
+  pub status_bar: StatusBarConfig,
+}
+
+/// Status bar item visibility configuration
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct StatusBarConfig {
+  /// Show the ESC/Reset button
+  #[serde(default = "default_true")]
+  pub show_reset: bool,
+
+  /// Show the command button
+  #[serde(default = "default_true")]
+  pub show_command: bool,
+
+  /// Show the session button
+  #[serde(default = "default_true")]
+  pub show_session: bool,
+
+  /// Show the power button
+  #[serde(default = "default_true")]
+  pub show_power: bool,
+
+  /// Show the background button
+  #[serde(default = "default_true")]
+  pub show_background: bool,
+
+  /// Show the current session/command indicator
+  #[serde(default = "default_true")]
+  pub show_session_status: bool,
+
+  /// Show the caps lock indicator
+  #[serde(default = "default_true")]
+  pub show_caps_lock: bool,
+}
+
+impl Default for StatusBarConfig {
+  fn default() -> Self {
+    Self {
+      show_reset:          default_true(),
+      show_command:        default_true(),
+      show_session:        default_true(),
+      show_power:          default_true(),
+      show_background:     default_true(),
+      show_session_status: default_true(),
+      show_caps_lock:      default_true(),
+    }
+  }
 }
 
 /// Power management configuration

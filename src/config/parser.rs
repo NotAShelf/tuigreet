@@ -173,6 +173,50 @@ fn apply_config_layer(dest: &mut Config, src: Config) {
     dest.layout.widgets.status_position = src.layout.widgets.status_position;
   }
 
+  // Status bar item visibility
+  if src.layout.widgets.status_bar.show_reset
+    != defaults.layout.widgets.status_bar.show_reset
+  {
+    dest.layout.widgets.status_bar.show_reset =
+      src.layout.widgets.status_bar.show_reset;
+  }
+  if src.layout.widgets.status_bar.show_command
+    != defaults.layout.widgets.status_bar.show_command
+  {
+    dest.layout.widgets.status_bar.show_command =
+      src.layout.widgets.status_bar.show_command;
+  }
+  if src.layout.widgets.status_bar.show_session
+    != defaults.layout.widgets.status_bar.show_session
+  {
+    dest.layout.widgets.status_bar.show_session =
+      src.layout.widgets.status_bar.show_session;
+  }
+  if src.layout.widgets.status_bar.show_power
+    != defaults.layout.widgets.status_bar.show_power
+  {
+    dest.layout.widgets.status_bar.show_power =
+      src.layout.widgets.status_bar.show_power;
+  }
+  if src.layout.widgets.status_bar.show_background
+    != defaults.layout.widgets.status_bar.show_background
+  {
+    dest.layout.widgets.status_bar.show_background =
+      src.layout.widgets.status_bar.show_background;
+  }
+  if src.layout.widgets.status_bar.show_session_status
+    != defaults.layout.widgets.status_bar.show_session_status
+  {
+    dest.layout.widgets.status_bar.show_session_status =
+      src.layout.widgets.status_bar.show_session_status;
+  }
+  if src.layout.widgets.status_bar.show_caps_lock
+    != defaults.layout.widgets.status_bar.show_caps_lock
+  {
+    dest.layout.widgets.status_bar.show_caps_lock =
+      src.layout.widgets.status_bar.show_caps_lock;
+  }
+
   // Power
   if src.power.shutdown != defaults.power.shutdown {
     dest.power.shutdown = src.power.shutdown;
@@ -555,7 +599,8 @@ pub fn extract_cli_config(matches: &getopts::Matches) -> Config {
   if let Some(s) = matches.opt_str("matrix-length") {
     let parts: Vec<&str> = s.split(',').map(str::trim).collect();
     if parts.len() == 2
-      && let (Ok(lo), Ok(hi)) = (parts[0].parse::<u16>(), parts[1].parse::<u16>())
+      && let (Ok(lo), Ok(hi)) =
+        (parts[0].parse::<u16>(), parts[1].parse::<u16>())
     {
       config.background.matrix.min_length = Some(lo);
       config.background.matrix.max_length = Some(hi);
@@ -564,7 +609,8 @@ pub fn extract_cli_config(matches: &getopts::Matches) -> Config {
   if let Some(s) = matches.opt_str("matrix-speed") {
     let parts: Vec<&str> = s.split(',').map(str::trim).collect();
     if parts.len() == 2
-      && let (Ok(lo), Ok(hi)) = (parts[0].parse::<f32>(), parts[1].parse::<f32>())
+      && let (Ok(lo), Ok(hi)) =
+        (parts[0].parse::<f32>(), parts[1].parse::<f32>())
     {
       config.background.matrix.min_speed = Some(lo);
       config.background.matrix.max_speed = Some(hi);

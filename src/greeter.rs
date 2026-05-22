@@ -148,6 +148,14 @@ pub struct Greeter {
   pub kb_power:      u8,
   pub kb_background: u8,
 
+  pub status_show_reset:          bool,
+  pub status_show_command:        bool,
+  pub status_show_session:        bool,
+  pub status_show_power:          bool,
+  pub status_show_background:     bool,
+  pub status_show_session_status: bool,
+  pub status_show_caps_lock:      bool,
+
   // Background animation, drawn before the login UI.
   pub animation:     Option<Box<dyn Animation>>,
   // Configured animation FPS, when an animation is active.
@@ -209,6 +217,13 @@ impl Default for Greeter {
       kb_sessions:           3,
       kb_power:              12,
       kb_background:         4,
+      status_show_reset:          true,
+      status_show_command:        true,
+      status_show_session:        true,
+      status_show_power:          true,
+      status_show_background:     true,
+      status_show_session_status: true,
+      status_show_caps_lock:      true,
       animation:             None,
       animation_fps:         None,
       mock:                  false,
@@ -1338,6 +1353,21 @@ impl Greeter {
     self.kb_sessions = config.keybindings.sessions;
     self.kb_power = config.keybindings.power;
     self.kb_background = config.keybindings.background;
+    // Status bar visibility
+    self.status_show_reset =
+      config.layout.widgets.status_bar.show_reset;
+    self.status_show_command =
+      config.layout.widgets.status_bar.show_command;
+    self.status_show_session =
+      config.layout.widgets.status_bar.show_session;
+    self.status_show_power =
+      config.layout.widgets.status_bar.show_power;
+    self.status_show_background =
+      config.layout.widgets.status_bar.show_background;
+    self.status_show_session_status =
+      config.layout.widgets.status_bar.show_session_status;
+    self.status_show_caps_lock =
+      config.layout.widgets.status_bar.show_caps_lock;
     // Animation
     self.set_background_from_config(&config.background);
     self.populate_backgrounds_menu();
