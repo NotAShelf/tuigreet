@@ -114,6 +114,9 @@ fn apply_config_layer(dest: &mut Config, src: Config) {
   if src.display.issue != defaults.display.issue {
     dest.display.issue = src.display.issue;
   }
+  if src.display.battery != defaults.display.battery {
+    dest.display.battery = src.display.battery;
+  }
   if src.display.align_greeting != defaults.display.align_greeting {
     dest.display.align_greeting = src.display.align_greeting;
   }
@@ -171,6 +174,12 @@ fn apply_config_layer(dest: &mut Config, src: Config) {
     != defaults.layout.widgets.status_position
   {
     dest.layout.widgets.status_position = src.layout.widgets.status_position;
+  }
+  if src.layout.widgets.battery_position
+    != defaults.layout.widgets.battery_position
+  {
+    dest.layout.widgets.battery_position =
+      src.layout.widgets.battery_position.clone();
   }
 
   // Status bar item visibility
@@ -446,6 +455,9 @@ pub fn extract_cli_config(matches: &getopts::Matches) -> Config {
   }
   if matches.opt_present("issue") {
     config.display.issue = true;
+  }
+  if matches.opt_present("battery") {
+    config.display.battery = true;
   }
   if let Some(align) = matches.opt_str("greet-align") {
     config.display.align_greeting = match align.as_str() {

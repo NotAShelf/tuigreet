@@ -31,12 +31,19 @@ use tui::{
   text::{Line, Span},
   widgets::Paragraph,
 };
-use tuigreet::{Mode, config::WidgetPosition};
+use tuigreet::{
+  Mode,
+  config::{BatteryPosition, WidgetPosition},
+};
 use util::buttonize;
 
 use self::common::style::{Theme, Themed};
 pub use self::i18n::MESSAGES;
-use crate::{Greeter, info::capslock_status, ui::util::should_hide_cursor};
+use crate::{
+  Greeter,
+  info::{capslock_status, get_battery_percentage},
+  ui::util::should_hide_cursor,
+};
 
 const STATUSBAR_LEFT_INDEX: usize = 1;
 const STATUSBAR_RIGHT_INDEX: usize = 2;
@@ -87,22 +94,26 @@ where
     let time_position = get_widget_position(&greeter, "time");
     let status_position = get_widget_position(&greeter, "status");
 
+    let time_at_top = greeter.time
+      && !matches!(
+        time_position,
+        WidgetPosition::Hidden | WidgetPosition::Bottom
+      );
+    let time_at_bottom =
+      greeter.time && matches!(time_position, WidgetPosition::Bottom);
+
     // Dynamic layout
     let mut constraints = vec![];
-    let mut time_slot = None;
+    let mut info_top_slot = None;
+    let mut time_bottom_slot = None;
     let mut status_slot = None;
 
     // Top padding
     constraints.push(Constraint::Length(greeter.window_padding()));
 
-    // Time at top (default behavior)
-    if greeter.time
-      && !matches!(
-        time_position,
-        WidgetPosition::Hidden | WidgetPosition::Bottom
-      )
-    {
-      time_slot = Some(constraints.len());
+    // Top info row: time centered, battery overlaid on left or right.
+    if greeter.battery || time_at_top {
+      info_top_slot = Some(constraints.len());
       constraints.push(Constraint::Length(1));
     }
 
@@ -126,8 +137,8 @@ where
     }
 
     // Time at bottom (if configured)
-    if greeter.time && matches!(time_position, WidgetPosition::Bottom) {
-      time_slot = Some(constraints.len());
+    if time_at_bottom {
+      time_bottom_slot = Some(constraints.len());
       constraints.push(Constraint::Length(1));
     }
 
@@ -136,14 +147,45 @@ where
 
     let chunks = Layout::default().constraints(constraints).split(size);
 
-    // Render time widget if enabled and not hidden
-    if let Some(slot) = time_slot {
-      let time_text = Span::from(get_time(&greeter));
-      let time = Paragraph::new(time_text)
-        .alignment(Alignment::Center)
-        .style(theme.of(&[Themed::Time]));
+    // Render top info row: time centered, battery overlaid
+    if let Some(slot) = info_top_slot {
+      if time_at_top {
+        f.render_widget(
+          Paragraph::new(Span::from(get_time(&greeter)))
+            .alignment(Alignment::Center)
+            .style(theme.of(&[Themed::Time])),
+          chunks[slot],
+        );
+      }
+      if greeter.battery {
+        if let Some(pct) = get_battery_percentage() {
+          let battery_pos = greeter
+            .loaded_config
+            .as_ref()
+            .map(|c| c.layout.widgets.battery_position.clone())
+            .unwrap_or_default();
+          let align = match battery_pos {
+            BatteryPosition::Left => Alignment::Left,
+            BatteryPosition::Right => Alignment::Right,
+          };
+          f.render_widget(
+            Paragraph::new(Span::from(format!("{pct}%")))
+              .alignment(align)
+              .style(theme.of(&[Themed::Time])),
+            chunks[slot],
+          );
+        }
+      }
+    }
 
-      f.render_widget(time, chunks[slot]);
+    // Render time at bottom
+    if let Some(slot) = time_bottom_slot {
+      f.render_widget(
+        Paragraph::new(Span::from(get_time(&greeter)))
+          .alignment(Alignment::Center)
+          .style(theme.of(&[Themed::Time])),
+        chunks[slot],
+      );
     }
 
     // Render status bar if not hidden

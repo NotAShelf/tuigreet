@@ -216,6 +216,10 @@ pub struct DisplayConfig {
   #[serde(default)]
   pub issue: bool,
 
+  /// Show battery percentage
+  #[serde(default)]
+  pub battery: bool,
+
   /// Greeting text alignment
   #[serde(default)]
   pub align_greeting: AlignGreeting,
@@ -324,6 +328,15 @@ impl Default for LayoutConfig {
   }
 }
 
+/// Battery widget placement
+#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum BatteryPosition {
+  #[default]
+  Left,
+  Right,
+}
+
 /// Widget positioning configuration
 #[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq, Eq)]
 pub struct WidgetConfig {
@@ -334,6 +347,10 @@ pub struct WidgetConfig {
   /// Position of status bar widget
   #[serde(default)]
   pub status_position: WidgetPosition,
+
+  /// Position of battery widget
+  #[serde(default)]
+  pub battery_position: BatteryPosition,
 
   /// Status bar item visibility
   #[serde(default)]

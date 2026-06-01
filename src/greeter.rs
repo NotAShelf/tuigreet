@@ -131,6 +131,8 @@ pub struct Greeter {
   pub time:        bool,
   // Time format
   pub time_format: Option<String>,
+  // Display battery percentage
+  pub battery:     bool,
   // Greeting message (MOTD) to use to welcome the user.
   pub greeting:    Option<String>,
   // Container's title configuration
@@ -208,6 +210,7 @@ impl Default for Greeter {
       theme:                 Theme::default(),
       time:                  false,
       time_format:           None,
+      battery:               false,
       greeting:              None,
       title:                 Default::default(),
       message:               None,
@@ -700,6 +703,7 @@ impl Greeter {
       "custom strftime format for displaying date and time",
       "FORMAT",
     );
+    opts.optflag("b", "battery", "display battery percentage");
     opts.optopt("u", "user", "pre-fill username field", "USER");
     opts.optflag("r", "remember", "remember last logged-in username");
     opts.optflag("", "remember-session", "remember last selected session");
@@ -939,6 +943,7 @@ impl Greeter {
     }
 
     self.time = self.config().opt_present("time");
+    self.battery = self.config().opt_present("battery");
 
     if let Some(format) = self.config().opt_str("time-format") {
       if StrftimeItems::new(&format).any(|item| item == Item::Error) {
@@ -1313,6 +1318,7 @@ impl Greeter {
     // Display
     self.time = config.display.show_time;
     self.time_format = config.display.time_format.clone();
+    self.battery = config.display.battery;
     self.greeting = if config.display.issue {
       get_issue()
     } else {

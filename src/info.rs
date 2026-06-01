@@ -373,6 +373,26 @@ where
   }))
 }
 
+pub fn get_battery_percentage() -> Option<u8> {
+  let power_dir = Path::new("/sys/class/power_supply");
+  let entries = fs::read_dir(power_dir).ok()?;
+
+  for entry in entries.flatten() {
+    let name = entry.file_name();
+    if !name.to_string_lossy().starts_with("BAT") {
+      continue;
+    }
+    let capacity_path = entry.path().join("capacity");
+    if let Ok(content) = fs::read_to_string(&capacity_path) {
+      if let Ok(cap) = content.trim().parse::<u8>() {
+        return Some(cap);
+      }
+    }
+  }
+
+  None
+}
+
 pub fn capslock_status() -> bool {
   let mut command = Command::new("kbdinfo");
   command.args(["gkbled", "capslock"]);
