@@ -41,7 +41,7 @@ use self::common::style::{Theme, Themed};
 pub use self::i18n::MESSAGES;
 use crate::{
   Greeter,
-  info::{capslock_status, get_battery_percentage},
+  info::{capslock_status, get_battery_info},
   ui::util::should_hide_cursor,
 };
 
@@ -158,23 +158,29 @@ where
         );
       }
       if greeter.battery
-        && let Some(pct) = get_battery_percentage() {
-          let battery_pos = greeter
-            .loaded_config
-            .as_ref()
-            .map(|c| c.layout.widgets.battery_position.clone())
-            .unwrap_or_default();
-          let align = match battery_pos {
-            BatteryPosition::Left => Alignment::Left,
-            BatteryPosition::Right => Alignment::Right,
-          };
-          f.render_widget(
-            Paragraph::new(Span::from(format!("{pct}%")))
-              .alignment(align)
-              .style(theme.of(&[Themed::Time])),
-            chunks[slot],
-          );
-        }
+        && let Some(info) = get_battery_info()
+      {
+        let text = if info.charging {
+          format!("{}%+", info.percentage)
+        } else {
+          format!("{}%", info.percentage)
+        };
+        let battery_pos = greeter
+          .loaded_config
+          .as_ref()
+          .map(|c| c.layout.widgets.battery_position.clone())
+          .unwrap_or_default();
+        let align = match battery_pos {
+          BatteryPosition::Left => Alignment::Left,
+          BatteryPosition::Right => Alignment::Right,
+        };
+        f.render_widget(
+          Paragraph::new(Span::from(text))
+            .alignment(align)
+            .style(theme.of(&[Themed::Time])),
+          chunks[slot],
+        );
+      }
     }
 
     // Render time at bottom
