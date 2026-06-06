@@ -383,11 +383,10 @@ pub fn get_battery_percentage() -> Option<u8> {
       continue;
     }
     let capacity_path = entry.path().join("capacity");
-    if let Ok(content) = fs::read_to_string(&capacity_path) {
-      if let Ok(cap) = content.trim().parse::<u8>() {
+    if let Ok(content) = fs::read_to_string(&capacity_path)
+      && let Ok(cap) = content.trim().parse::<u8>() {
         return Some(cap);
       }
-    }
   }
 
   None

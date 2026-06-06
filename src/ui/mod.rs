@@ -157,8 +157,8 @@ where
           chunks[slot],
         );
       }
-      if greeter.battery {
-        if let Some(pct) = get_battery_percentage() {
+      if greeter.battery
+        && let Some(pct) = get_battery_percentage() {
           let battery_pos = greeter
             .loaded_config
             .as_ref()
@@ -175,7 +175,6 @@ where
             chunks[slot],
           );
         }
-      }
     }
 
     // Render time at bottom
