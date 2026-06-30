@@ -19,6 +19,7 @@ use tokio::{
   sync::{RwLock, RwLockWriteGuard, mpsc::Sender},
 };
 use tracing_appender::non_blocking::WorkerGuard;
+use tuigreet_config::KmsconMode;
 use tuigreet_theme::Theme;
 use tuigreet_types::{
   AuthStatus,
@@ -101,6 +102,10 @@ pub struct Greeter {
   pub session_wrapper:  Option<String>,
   // Wrapper command to prepend to X11 sessions.
   pub xsession_wrapper: Option<String>,
+  // Whether sessions should be launched through kmscon-launch-gui.
+  pub kmscon:           KmsconMode,
+  // Launcher used to hand graphical sessions off from kmscon.
+  pub kmscon_launcher:  String,
 
   // Whether user menu is enabled.
   pub user_menu:    bool,
@@ -197,6 +202,8 @@ impl Default for Greeter {
       sessions:                   Menu::default(),
       session_wrapper:            None,
       xsession_wrapper:           None,
+      kmscon:                     KmsconMode::Auto,
+      kmscon_launcher:            "kmscon-launch-gui".to_string(),
       user_menu:                  false,
       users:                      Menu::default(),
       default_user:               None,
@@ -503,6 +510,19 @@ impl Greeter {
     }
   }
 
+  #[must_use]
+  pub fn kmscon_enabled(&self) -> bool {
+    match self.kmscon {
+      KmsconMode::Enabled => true,
+      KmsconMode::Disabled => false,
+      KmsconMode::Auto => {
+        env::var("TERM").is_ok_and(|term| term == "kmscon")
+          || env::var("TERM_PROGRAM")
+            .is_ok_and(|term_program| term_program == "kmscon")
+      },
+    }
+  }
+
   // Returns the width of the main window where content is displayed from the
   // provided arguments.
   #[must_use]
@@ -654,6 +674,22 @@ impl Greeter {
       "",
       "session-wrapper",
       "wrapper command to initialize the non-X11 session",
+      "'CMD [ARGS]...'",
+    );
+    opts.optflag(
+      "",
+      "kmscon",
+      "launch sessions through kmscon-launch-gui for KMSCON consoles",
+    );
+    opts.optflag(
+      "",
+      "no-kmscon",
+      "disable KMSCON auto-detection and session handoff",
+    );
+    opts.optopt(
+      "",
+      "kmscon-launcher",
+      "command used by --kmscon to hand off graphical sessions",
       "'CMD [ARGS]...'",
     );
     opts.optopt(
@@ -1012,6 +1048,11 @@ impl Greeter {
     {
       return Err("--remember-session must be used with --remember".into());
     }
+    if self.config().opt_present("kmscon")
+      && self.config().opt_present("no-kmscon")
+    {
+      return Err("Only one of --kmscon and --no-kmscon may be used".into());
+    }
 
     self.default_user = self.option("user");
     self.remember = self.config().opt_present("remember");
@@ -1054,6 +1095,16 @@ impl Greeter {
 
     if let Some(wrapper) = self.option("session-wrapper") {
       self.session_wrapper = Some(wrapper);
+    }
+
+    if self.config().opt_present("kmscon") {
+      self.kmscon = KmsconMode::Enabled;
+    }
+    if self.config().opt_present("no-kmscon") {
+      self.kmscon = KmsconMode::Disabled;
+    }
+    if let Some(launcher) = self.option("kmscon-launcher") {
+      self.kmscon_launcher = launcher;
     }
 
     if !self.config().opt_present("no-xsession-wrapper") {
@@ -1337,6 +1388,10 @@ impl Greeter {
     self
       .session_wrapper
       .clone_from(&config.session.session_wrapper);
+    self.kmscon = config.session.kmscon;
+    self
+      .kmscon_launcher
+      .clone_from(&config.session.kmscon_launcher);
     if !self.config().opt_present("no-xsession-wrapper") {
       self.xsession_wrapper = config.session.xsession_wrapper.clone();
     }
@@ -1509,7 +1564,7 @@ fn print_version() {
 
 #[cfg(test)]
 mod test {
-  use tuigreet_config::Config;
+  use tuigreet_config::{Config, KmsconMode};
   use tuigreet_types::SecretDisplay;
 
   use crate::{
@@ -1663,6 +1718,23 @@ mod test {
         }),
       ),
       (
+        &["--kmscon", "--kmscon-launcher", "custom-kmscon-launcher"],
+        true,
+        Some(|greeter| {
+          assert_eq!(greeter.kmscon, KmsconMode::Enabled);
+          assert_eq!(greeter.kmscon_launcher, "custom-kmscon-launcher");
+          assert!(greeter.kmscon_enabled());
+        }),
+      ),
+      (
+        &["--no-kmscon"],
+        true,
+        Some(|greeter| {
+          assert_eq!(greeter.kmscon, KmsconMode::Disabled);
+          assert!(!greeter.kmscon_enabled());
+        }),
+      ),
+      (
         &["--no-xsession-wrapper"],
         true,
         Some(|greeter| {
@@ -1683,6 +1755,7 @@ mod test {
       (&["--time-format", "%i %"], false, None),
       (&["--cmd", "cmd", "--env"], false, None),
       (&["--cmd", "cmd", "--env", "A"], false, None),
+      (&["--kmscon", "--no-kmscon"], false, None),
     ];
 
     for (opts, valid, check) in table {
@@ -1767,6 +1840,22 @@ mod test {
               "XDG_SESSION_TYPE=wayland".to_string()
             ]
     ));
+  }
+
+  #[tokio::test]
+  async fn test_config_kmscon_options_are_applied() {
+    let mut greeter = Greeter::default();
+
+    assert!(greeter.parse_options(&[] as &[&str]).await.is_ok());
+
+    let mut config = Config::default();
+    config.session.kmscon = KmsconMode::Enabled;
+    config.session.kmscon_launcher = "custom-launcher".to_string();
+    greeter.apply_config(&config);
+
+    assert_eq!(greeter.kmscon, KmsconMode::Enabled);
+    assert_eq!(greeter.kmscon_launcher, "custom-launcher");
+    assert!(greeter.kmscon_enabled());
   }
 
   #[tokio::test]
