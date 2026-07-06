@@ -12,6 +12,9 @@ debug = false
 # Log file path
 log_file = "/tmp/tuigreet.log"
 
+# Enable numlock on startup
+numlock = false
+
 [session]
 # Override session with a specific command
 # command = "sway"

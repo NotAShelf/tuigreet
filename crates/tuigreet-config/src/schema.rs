@@ -142,6 +142,10 @@ pub struct GeneralConfig {
   /// Log file path
   #[serde(default = "default_log_file")]
   pub log_file: String,
+
+  /// Enable numlock on startup
+  #[serde(default)]
+  pub numlock: bool,
 }
 
 impl Default for GeneralConfig {
@@ -149,6 +153,7 @@ impl Default for GeneralConfig {
     Self {
       debug:    false,
       log_file: default_log_file(),
+      numlock:  false,
     }
   }
 }

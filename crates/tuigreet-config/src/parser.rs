@@ -74,6 +74,9 @@ fn apply_config_layer(dest: &mut Config, src: Config) {
   if src.general.log_file != defaults.general.log_file {
     dest.general.log_file = src.general.log_file;
   }
+  if src.general.numlock != defaults.general.numlock {
+    dest.general.numlock = src.general.numlock;
+  }
 
   // Session
   if src.session.command != defaults.session.command {
@@ -518,6 +521,9 @@ pub fn extract_cli_config(matches: &getopts::Matches) -> Config {
   // General config
   if matches.opt_present("debug") {
     config.general.debug = true;
+  }
+  if matches.opt_present("numlock") {
+    config.general.numlock = true;
   }
   // Display config
   if matches.opt_present("time") {

@@ -69,6 +69,10 @@ where
 
   register_panic_handler();
 
+  if greeter.numlock {
+    enable_numlock();
+  }
+
   #[cfg(not(test))]
   {
     enable_raw_mode()?;
@@ -224,6 +228,19 @@ async fn exit(greeter: &mut Greeter, status: AuthStatus) {
   let _ = disable_raw_mode();
 
   greeter.exit = Some(status);
+}
+
+use nix::{ioctl_read_bad, ioctl_write_int_bad};
+ioctl_read_bad!(get_keyboard_flags, 0x4B64, u8);
+ioctl_write_int_bad!(set_keyboard_flags, 0x4B65);
+fn enable_numlock() {
+  unsafe {
+    let mut flags: u8 = 0;
+    if get_keyboard_flags(0, &mut flags).is_ok() {
+      flags |= 0x22;
+      let _ = set_keyboard_flags(0, flags as i32);
+    }
+  }
 }
 
 fn register_panic_handler() {
