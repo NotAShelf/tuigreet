@@ -175,18 +175,27 @@ example, you may create an overlay to override `pkgs.tuigreet` as follows:
 
 ```nix
 [
-  (prev: {
-    tuigreet = prev.tuigreet.overrideAttrs {
-      src = prev.fetchFromGitHub {
-        owner = "NotAShelf";
-        repo = "tuigreet";
-        tag = "0.10.2"; # update this with the tag you want to use
-        hash = ""; # update this with the appropriate hash for your tag
-      };
+  (final: prev: {
+    tuigreet = prev.tuigreet.overrideAttrs (
+      finalAttrs: prevAttrs: {
+        version = "0.10.2";
 
-      # You will also need to overwrite the hash for cargo dependencies
-      cargoHash = "" # update this with the appropriate hash
-    };
+        src = final.fetchFromGitHub {
+          inherit (prevAttrs.src) repo;
+          owner = "NotAShelf";
+          # update this with the tag you want to use, if ≠'version'
+          tag = finalAttrs.version;
+          # update this with the appropriate hash for your tag
+          hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+        };
+
+        cargoDeps = final.rustPlatform.fetchCargoVendor {
+          inherit (finalAttrs) src;
+          # update this with the appropriate cargo dependencies hash
+          hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+        };
+      }
+    );
   }
 ]
 ```
