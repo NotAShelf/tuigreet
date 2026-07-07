@@ -521,7 +521,7 @@ pub struct ThemeConfig {
 #[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq)]
 pub struct BackgroundConfig {
   /// Which animation to run. `None` or `"none"` disables animations.
-  /// Currently supported: `"doom"`, `"matrix"`.
+  /// Currently supported: `"doom"`, `"matrix"`, `"fireworks"`.
   #[serde(default)]
   pub kind: Option<String>,
 
@@ -537,6 +537,10 @@ pub struct BackgroundConfig {
   /// Parameters for the cmatrix-style digital rain effect.
   #[serde(default)]
   pub matrix: MatrixConfig,
+
+  /// Parameters for the fireworks particle animation.
+  #[serde(default)]
+  pub fireworks: FireworksConfig,
 }
 
 /// Parameters for the DOOM-style fire animation. Field names mirror Ly's
@@ -601,6 +605,74 @@ pub struct MatrixConfig {
   /// shimmer). `0.0` disables.
   #[serde(default)]
   pub mutate_chance: Option<f32>,
+}
+
+/// A weighted color palette entry for fireworks explosions.
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct PaletteEntry {
+  /// Selection weight (higher = more likely to be chosen).
+  pub weight: u32,
+  /// List of color names or hex codes (`#RRGGBB` / `0xRRGGBB`) accepted by
+  /// ratatui.
+  pub colors: Vec<String>,
+}
+
+/// Parameters for the fireworks particle animation.
+#[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq)]
+pub struct FireworksConfig {
+  /// Maximum number of active particles. Default: 2000.
+  #[serde(default)]
+  pub max_particles: Option<usize>,
+
+  /// Gravity multiplier (higher = faster fall). `1.0` = default.
+  #[serde(default)]
+  pub gravity: Option<f32>,
+
+  /// How often rockets launch (frequency multiplier). `1.0` = default.
+  #[serde(default)]
+  pub launch_freq: Option<f32>,
+
+  /// How high rockets fly relative to terminal height. `1.0` = default.
+  #[serde(default)]
+  pub height_scale: Option<f32>,
+
+  /// Overall size multiplier for explosion particles. `1.0` = default.
+  #[serde(default)]
+  pub size_scale: Option<f32>,
+
+  /// Rocket climb (ascent) speed multiplier. `1.0` = default.
+  #[serde(default)]
+  pub climb_speed: Option<f32>,
+
+  /// Spark decay speed multiplier (higher = faster fade). `1.0` = default.
+  #[serde(default)]
+  pub decay_speed: Option<f32>,
+
+  /// Explosion spread speed multiplier. `1.0` = default.
+  #[serde(default)]
+  pub explosion_speed: Option<f32>,
+
+  /// Spark air drag multiplier. Default: `0.96`.
+  #[serde(default)]
+  pub spark_drag: Option<f32>,
+
+  /// Characters used to render sparks, ordered from brightest to dimmest.
+  /// Example: `"█▓▒░. "`.
+  #[serde(default)]
+  pub spark_chars: Option<String>,
+
+  /// Color palettes for explosions. Each palette has a `weight` and a list of
+  /// color names or hex codes (`#RRGGBB` / `0xRRGGBB`) accepted by ratatui.
+  /// A random palette is chosen per rocket, weighted by `weight`.
+  /// Example:
+  /// ```toml
+  /// palettes = [
+  ///   { weight = 5, colors = ["red", "yellow", "white"] },
+  ///   { weight = 2, colors = ["blue", "cyan", "white"] },
+  /// ]
+  /// ```
+  #[serde(default)]
+  pub palettes: Option<Vec<PaletteEntry>>,
 }
 
 /// Greeting alignment options

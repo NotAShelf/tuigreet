@@ -309,6 +309,49 @@ fn apply_config_layer(dest: &mut Config, src: Config) {
   if src.background.matrix.mutate_chance.is_some() {
     dest.background.matrix.mutate_chance = src.background.matrix.mutate_chance;
   }
+  if src.background.fireworks.launch_freq.is_some() {
+    dest.background.fireworks.launch_freq = src.background.fireworks.launch_freq;
+  }
+  if src.background.fireworks.max_particles.is_some() {
+    dest.background.fireworks.max_particles =
+      src.background.fireworks.max_particles;
+  }
+  if src.background.fireworks.gravity.is_some() {
+    dest.background.fireworks.gravity =
+      src.background.fireworks.gravity;
+  }
+  if src.background.fireworks.height_scale.is_some() {
+    dest.background.fireworks.height_scale =
+      src.background.fireworks.height_scale;
+  }
+  if src.background.fireworks.size_scale.is_some() {
+    dest.background.fireworks.size_scale =
+      src.background.fireworks.size_scale;
+  }
+  if src.background.fireworks.climb_speed.is_some() {
+    dest.background.fireworks.climb_speed =
+      src.background.fireworks.climb_speed;
+  }
+  if src.background.fireworks.decay_speed.is_some() {
+    dest.background.fireworks.decay_speed =
+      src.background.fireworks.decay_speed;
+  }
+  if src.background.fireworks.explosion_speed.is_some() {
+    dest.background.fireworks.explosion_speed =
+      src.background.fireworks.explosion_speed;
+  }
+  if src.background.fireworks.spark_drag.is_some() {
+    dest.background.fireworks.spark_drag =
+      src.background.fireworks.spark_drag;
+  }
+  if src.background.fireworks.spark_chars.is_some() {
+    dest.background.fireworks.spark_chars =
+      src.background.fireworks.spark_chars;
+  }
+  if src.background.fireworks.palettes.is_some() {
+    dest.background.fireworks.palettes =
+      src.background.fireworks.palettes;
+  }
 
   // Outputs: a non-empty list from a higher-priority layer fully replaces
   if !src.outputs.is_empty() {
@@ -714,6 +757,47 @@ pub fn extract_cli_config(matches: &getopts::Matches) -> Config {
     {
       config.background.matrix.min_speed = Some(lo);
       config.background.matrix.max_speed = Some(hi);
+    }
+  }
+  // Fireworks config
+  if let Some(s) = matches.opt_str("fireworks-scale") {
+    let parts: Vec<&str> = s.split(',').map(str::trim).collect();
+    if parts.len() == 2
+      && let (Ok(h), Ok(sz)) =
+        (parts[0].parse::<f32>(), parts[1].parse::<f32>())
+    {
+      config.background.fireworks.height_scale = Some(h);
+      config.background.fireworks.size_scale = Some(sz);
+    }
+  }
+  if let Some(s) = matches.opt_str("fireworks-speed") {
+    let parts: Vec<&str> = s.split(',').map(str::trim).collect();
+    if parts.len() == 4
+      && let (Ok(r), Ok(l), Ok(d), Ok(e)) = (
+        parts[0].parse::<f32>(),
+        parts[1].parse::<f32>(),
+        parts[2].parse::<f32>(),
+        parts[3].parse::<f32>(),
+      )
+    {
+      config.background.fireworks.launch_freq = Some(r);
+      config.background.fireworks.climb_speed = Some(l);
+      config.background.fireworks.decay_speed = Some(d);
+      config.background.fireworks.explosion_speed = Some(e);
+    }
+  }
+  if let Some(s) = matches.opt_str("fireworks-env") {
+    let parts: Vec<&str> = s.split(',').map(str::trim).collect();
+    if parts.len() == 3
+      && let (Ok(n), Ok(g), Ok(d)) = (
+        parts[0].parse::<usize>(),
+        parts[1].parse::<f32>(),
+        parts[2].parse::<f32>(),
+      )
+    {
+      config.background.fireworks.max_particles = Some(n);
+      config.background.fireworks.gravity = Some(g);
+      config.background.fireworks.spark_drag = Some(d);
     }
   }
   config
