@@ -43,6 +43,7 @@ use crate::{
   ui::util::should_hide_cursor,
 };
 
+const INFOBAR_CONTENT_INDEX: usize = 1;
 const STATUSBAR_LEFT_INDEX: usize = 1;
 const STATUSBAR_RIGHT_INDEX: usize = 2;
 
@@ -147,12 +148,24 @@ where
 
     // Render top info row: time centered, battery overlaid
     if let Some(slot) = info_top_slot {
+      let top_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+          [
+            Constraint::Length(greeter.window_padding()),
+            Constraint::Length(size.width - 2 * greeter.window_padding()),
+            Constraint::Length(greeter.window_padding()),
+          ]
+          .as_ref(),
+        )
+        .split(chunks[slot]);
+
       if time_at_top {
         f.render_widget(
           Paragraph::new(Span::from(get_time(&greeter)))
             .alignment(Alignment::Center)
             .style(theme.of(&[Themed::Time])),
-          chunks[slot],
+          top_chunks[INFOBAR_CONTENT_INDEX],
         );
       }
       if greeter.battery
@@ -176,7 +189,7 @@ where
           Paragraph::new(Span::from(text))
             .alignment(align)
             .style(theme.of(&[Themed::Time])),
-          chunks[slot],
+          top_chunks[INFOBAR_CONTENT_INDEX],
         );
       }
     }
