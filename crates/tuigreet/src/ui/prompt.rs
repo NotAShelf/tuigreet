@@ -203,7 +203,9 @@ pub fn draw_with_area(
       }
 
       if let Some(message) = message {
-        let message = message.alignment(Alignment::Center);
+        let message = message
+          .alignment(Alignment::Center)
+          .style(greeter.theme.of(&[Themed::Text]));
 
         f.render_widget(
           message,

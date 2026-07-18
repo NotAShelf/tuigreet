@@ -26,7 +26,7 @@ use tokio::sync::RwLock;
 use tui::{
   Frame as CrosstermFrame,
   Terminal,
-  layout::{Alignment, Constraint, Direction, Layout},
+  layout::{Constraint, Direction, Layout},
   style::Modifier,
   text::{Line, Span},
   widgets::Paragraph,
@@ -45,7 +45,7 @@ use crate::{
 
 const INFOBAR_CONTENT_INDEX: usize = 1;
 const STATUSBAR_LEFT_INDEX: usize = 1;
-const STATUSBAR_RIGHT_INDEX: usize = 2;
+const STATUSBAR_RIGHT_INDEX: usize = 3;
 
 pub type Frame<'a> = CrosstermFrame<'a>;
 
@@ -153,7 +153,7 @@ where
         .constraints(
           [
             Constraint::Length(greeter.window_padding()),
-            Constraint::Length(size.width - 2 * greeter.window_padding()),
+            Constraint::Fill(1),
             Constraint::Length(greeter.window_padding()),
           ]
           .as_ref(),
@@ -161,63 +161,105 @@ where
         .split(chunks[slot]);
 
       if time_at_top {
+        let time_text = get_time(&greeter);
+
+        let center_chunks = Layout::default()
+          .direction(Direction::Horizontal)
+          .constraints(
+            [
+              Constraint::Fill(1),
+              Constraint::Length(time_text.len() as u16),
+              Constraint::Fill(1),
+            ]
+            .as_ref(),
+          )
+          .split(top_chunks[INFOBAR_CONTENT_INDEX]);
+
         f.render_widget(
-          Paragraph::new(Span::from(get_time(&greeter)))
-            .alignment(Alignment::Center)
+          Paragraph::new(Span::from(time_text))
             .style(theme.of(&[Themed::Time])),
-          top_chunks[INFOBAR_CONTENT_INDEX],
+          center_chunks[1],
         );
       }
+
       if greeter.battery
         && let Some(info) = get_battery_info()
       {
-        let text = if info.charging {
+        let battery_text = if info.charging {
           format!("{}%+", info.percentage)
         } else {
           format!("{}%", info.percentage)
         };
+
         let battery_pos = greeter
           .loaded_config
           .as_ref()
           .map(|c| c.layout.widgets.battery_position.clone())
           .unwrap_or_default();
-        let align = match battery_pos {
-          BatteryPosition::Left => Alignment::Left,
-          BatteryPosition::Right => Alignment::Right,
+
+        let (bat_slot, cons) = match battery_pos {
+          BatteryPosition::Left => {
+            (0, vec![
+              Constraint::Length(battery_text.len() as u16),
+              Constraint::Fill(1),
+            ])
+          },
+          BatteryPosition::Right => {
+            (1, vec![
+              Constraint::Fill(1),
+              Constraint::Length(battery_text.len() as u16),
+            ])
+          },
         };
+
+        let center_chunks = Layout::default()
+          .direction(Direction::Horizontal)
+          .constraints(cons)
+          .split(top_chunks[INFOBAR_CONTENT_INDEX]);
+
         f.render_widget(
-          Paragraph::new(Span::from(text))
-            .alignment(align)
+          Paragraph::new(Span::from(battery_text))
             .style(theme.of(&[Themed::Time])),
-          top_chunks[INFOBAR_CONTENT_INDEX],
+          center_chunks[bat_slot],
         );
       }
     }
 
     // Render time at bottom
     if let Some(slot) = time_bottom_slot {
+      let time_text = get_time(&greeter);
+
+      let time_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+          [
+            Constraint::Length(greeter.window_padding()),
+            Constraint::Fill(1),
+            Constraint::Length(time_text.len() as u16),
+            Constraint::Fill(1),
+            Constraint::Length(greeter.window_padding()),
+          ]
+          .as_ref(),
+        )
+        .split(chunks[slot]);
+
       f.render_widget(
-        Paragraph::new(Span::from(get_time(&greeter)))
-          .alignment(Alignment::Center)
-          .style(theme.of(&[Themed::Time])),
-        chunks[slot],
+        Paragraph::new(Span::from(time_text)).style(theme.of(&[Themed::Time])),
+        time_chunks[2],
       );
     }
 
     // Render status bar if not hidden
     if let Some(slot) = status_slot {
-      let status_block_size_right = 1
-        + greeter.window_padding()
-        + fl!("status_caps").chars().count() as u16;
-      let status_block_size_left =
-        (size.width - greeter.window_padding()) - status_block_size_right;
+      let status_block_size_right = fl!("status_caps").chars().count() as u16;
 
       let status_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(
           [
             Constraint::Length(greeter.window_padding()),
-            Constraint::Length(status_block_size_left),
+            Constraint::Min(1),
+            Constraint::Length(1),
             Constraint::Length(status_block_size_right),
             Constraint::Length(greeter.window_padding()),
           ]
@@ -306,8 +348,7 @@ where
 
       if greeter.status_show_caps_lock && capslock_status() {
         let status_right_text = status_label(theme, fl!("status_caps"));
-        let status_right =
-          Paragraph::new(status_right_text).alignment(Alignment::Right);
+        let status_right = Paragraph::new(status_right_text);
 
         f.render_widget(status_right, status_chunks[STATUSBAR_RIGHT_INDEX]);
       }
