@@ -168,7 +168,7 @@ where
           .constraints(
             [
               Constraint::Fill(1),
-              Constraint::Length(time_text.len() as u16),
+              Constraint::Length(time_text.chars().count() as u16),
               Constraint::Fill(1),
             ]
             .as_ref(),
@@ -200,14 +200,14 @@ where
         let (bat_slot, cons) = match battery_pos {
           BatteryPosition::Left => {
             (0, vec![
-              Constraint::Length(battery_text.len() as u16),
+              Constraint::Length(battery_text.chars().count() as u16),
               Constraint::Fill(1),
             ])
           },
           BatteryPosition::Right => {
             (1, vec![
               Constraint::Fill(1),
-              Constraint::Length(battery_text.len() as u16),
+              Constraint::Length(battery_text.chars().count() as u16),
             ])
           },
         };
@@ -235,7 +235,7 @@ where
           [
             Constraint::Length(greeter.window_padding()),
             Constraint::Fill(1),
-            Constraint::Length(time_text.len() as u16),
+            Constraint::Length(time_text.chars().count() as u16),
             Constraint::Fill(1),
             Constraint::Length(greeter.window_padding()),
           ]
