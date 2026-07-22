@@ -17,10 +17,10 @@ log_file = "/tmp/tuigreet.log"
 # command = "sway"
 
 # Directories containing Wayland session files
-sessions_dirs = ["/usr/share/wayland-sessions"]
+sessions_dirs = [ "/usr/share/wayland-sessions" ]
 
 # Directories containing X11 session files
-xsessions_dirs = ["/usr/share/xsessions"]
+xsessions_dirs = [ "/usr/share/xsessions" ]
 
 # Wrapper command for non-X11 sessions
 # session_wrapper = "exec"
@@ -30,6 +30,12 @@ xsessions_dirs = ["/usr/share/xsessions"]
 
 # Environment variables for default session
 # environments = ["XDG_CURRENT_DESKTOP=sway", "XDG_SESSION_TYPE=wayland"]
+
+# KMSCON support: "auto", "enabled", or "disabled"
+kmscon = "auto"
+
+# Command used to hand graphical sessions off from KMSCON
+kmscon_launcher = "kmscon-launch-gui"
 
 [display]
 # Show current time
