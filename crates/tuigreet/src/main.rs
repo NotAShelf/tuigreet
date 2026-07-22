@@ -63,6 +63,7 @@ async fn run<B>(
 ) -> Result<(), Box<dyn Error>>
 where
   B: tui::backend::Backend,
+  B::Error: 'static,
 {
   tracing::info!("tuigreet started");
 

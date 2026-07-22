@@ -76,6 +76,7 @@ pub async fn draw<B>(
 ) -> Result<(), Box<dyn Error>>
 where
   B: tui::backend::Backend,
+  B::Error: 'static,
 {
   let mut greeter = greeter.write().await;
   let hide_cursor = should_hide_cursor(&greeter);
