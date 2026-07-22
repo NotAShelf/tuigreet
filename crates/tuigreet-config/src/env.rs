@@ -348,9 +348,13 @@ pub fn load_env_variables() -> Config {
   // Secret configuration
   if let Ok(value) = env::var("TUIGREET_SECRET_MODE") {
     match value.to_lowercase().as_str() {
-      "hidden" => config.secret.mode = SecretMode::Hidden,
+      "hidden" => {
+        config.secret.mode = SecretMode::Hidden;
+        config.secret_mode_specified = true;
+      },
       "character" | "characters" => {
         config.secret.mode = SecretMode::Characters;
+        config.secret_mode_specified = true;
         if let Ok(chars) = env::var("TUIGREET_SECRET_CHARACTERS") {
           config.secret.characters = chars;
         }

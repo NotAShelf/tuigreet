@@ -3,6 +3,11 @@ use serde::{Deserialize, Serialize};
 /// Root configuration structure
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct Config {
+  /// Parser metadata used to preserve explicit default-valued secret modes
+  /// during configuration layering.
+  #[serde(skip)]
+  pub(crate) secret_mode_specified: bool,
+
   #[serde(default)]
   pub general: GeneralConfig,
 
@@ -192,6 +197,10 @@ impl Default for SessionConfig {
 /// Display and visual configuration
 #[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq, Eq)]
 pub struct DisplayConfig {
+  /// Legacy secret-mask toggle. Prefer `[secret] mode = "characters"`.
+  #[serde(default, skip_serializing)]
+  pub(crate) asterisks: Option<bool>,
+
   /// Show current time
   #[serde(default)]
   pub show_time: bool,

@@ -37,19 +37,21 @@ pub fn load_config(
   cli_config_path: Option<&Path>,
   cli_matches: Option<&getopts::Matches>,
 ) -> Result<Config, ConfigError> {
-  if let Some(path) = cli_config_path {
-    return load_config_from_path(path);
-  }
+  let mut config = if let Some(path) = cli_config_path {
+    load_config_from_path(path)?
+  } else {
+    let mut config = Config::default();
 
-  let mut config = Config::default();
+    if let Ok(system) = load_system_config() {
+      apply_config_layer(&mut config, system);
+    }
 
-  if let Ok(system) = load_system_config() {
-    apply_config_layer(&mut config, system);
-  }
+    if let Ok(user) = load_user_config() {
+      apply_config_layer(&mut config, user);
+    }
 
-  if let Ok(user) = load_user_config() {
-    apply_config_layer(&mut config, user);
-  }
+    config
+  };
 
   let env_vars = load_env_variables();
   apply_config_layer(&mut config, env_vars);
@@ -59,6 +61,7 @@ pub fn load_config(
     apply_config_layer(&mut config, cli_config);
   }
 
+  normalize_legacy_asterisks(&mut config);
   Ok(config)
 }
 
@@ -147,8 +150,14 @@ fn apply_config_layer(dest: &mut Config, src: Config) {
   }
 
   // Secret
-  if src.secret.mode != defaults.secret.mode {
+  if src.display.asterisks.is_some() {
+    dest.display.asterisks = src.display.asterisks;
+  }
+  if src.secret_mode_specified || src.secret.mode != defaults.secret.mode {
     dest.secret.mode = src.secret.mode;
+    dest.secret_mode_specified = true;
+  } else if let Some(asterisks) = src.display.asterisks {
+    dest.secret.mode = legacy_secret_mode(asterisks);
   }
   if src.secret.characters != defaults.secret.characters {
     dest.secret.characters = src.secret.characters;
@@ -358,8 +367,34 @@ fn apply_config_layer(dest: &mut Config, src: Config) {
 fn load_config_from_path(path: &Path) -> Result<Config, ConfigError> {
   let content = fs::read_to_string(path)?;
   match toml::from_str::<Config>(&content) {
-    Ok(config) => Ok(config),
+    Ok(mut config) => {
+      config.secret_mode_specified = toml::from_str::<toml::Table>(&content)
+        .is_ok_and(|table| {
+          table
+            .get("secret")
+            .and_then(toml::Value::as_table)
+            .is_some_and(|secret| secret.contains_key("mode"))
+        });
+      Ok(config)
+    },
     Err(e) => Err(toml_error(path, &content, e)),
+  }
+}
+
+fn legacy_secret_mode(asterisks: bool) -> SecretMode {
+  if asterisks {
+    SecretMode::Characters
+  } else {
+    SecretMode::Hidden
+  }
+}
+
+/// Applies the compatibility alias only if the canonical field was absent.
+fn normalize_legacy_asterisks(config: &mut Config) {
+  if !config.secret_mode_specified
+    && let Some(asterisks) = config.display.asterisks
+  {
+    config.secret.mode = legacy_secret_mode(asterisks);
   }
 }
 
@@ -650,6 +685,14 @@ impl Config {
     validate_wrappers: bool,
   ) -> Result<Vec<String>, ConfigError> {
     let mut warnings = Vec::new();
+
+    if self.display.asterisks.is_some() {
+      warnings.push(
+        "display.asterisks is deprecated; use secret.mode = \"characters\" or \
+         \"hidden\" instead"
+          .to_string(),
+      );
+    }
 
     // Check mutually exclusive options
     if self.display.issue && self.display.greeting.is_some() {
@@ -971,6 +1014,58 @@ fn command_exists(command: &str) -> bool {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn canonical_secret_mode_wins_over_legacy_alias() {
+    let mut config: Config = toml::from_str(
+      r#"
+[display]
+asterisks = true
+
+[secret]
+mode = "hidden"
+"#,
+    )
+    .expect("configuration must parse");
+    config.secret_mode_specified = true;
+
+    normalize_legacy_asterisks(&mut config);
+
+    assert_eq!(config.secret.mode, SecretMode::Hidden);
+  }
+
+  #[test]
+  fn legacy_false_overrides_a_lower_characters_layer() {
+    let mut resolved = Config::default();
+    resolved.secret.mode = SecretMode::Characters;
+
+    let mut legacy_layer = Config::default();
+    legacy_layer.display.asterisks = Some(false);
+    apply_config_layer(&mut resolved, legacy_layer);
+
+    assert_eq!(resolved.secret.mode, SecretMode::Hidden);
+    assert!(
+      resolved
+        .validate(false)
+        .expect("legacy configuration is valid")
+        .iter()
+        .any(|warning| warning.contains("display.asterisks is deprecated"))
+    );
+  }
+
+  #[test]
+  fn canonical_higher_layer_overrides_legacy_alias() {
+    let mut resolved = Config::default();
+    resolved.display.asterisks = Some(true);
+
+    let mut canonical_layer = Config::default();
+    canonical_layer.secret.mode = SecretMode::Hidden;
+    canonical_layer.secret_mode_specified = true;
+    apply_config_layer(&mut resolved, canonical_layer);
+    normalize_legacy_asterisks(&mut resolved);
+
+    assert_eq!(resolved.secret.mode, SecretMode::Hidden);
+  }
 
   #[test]
   fn test_mutual_exclusive_remember_flags() {
