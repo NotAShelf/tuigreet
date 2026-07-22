@@ -80,6 +80,8 @@ where
   #[cfg(not(test))]
   terminal.clear()?;
 
+  events.start();
+
   let ipc = Ipc::new();
 
   if greeter.remember && !greeter.username.value.is_empty() {

@@ -64,9 +64,18 @@ impl Events {
     let (tx, rx) = mpsc::channel(10);
     let frame_rate = Arc::new(AtomicU64::new(DEFAULT_FRAME_RATE.to_bits()));
 
+    Self { rx, tx, frame_rate }
+  }
+
+  /// Start receiving terminal and render events.
+  ///
+  /// The terminal input stream must only be created after raw mode is enabled.
+  /// Creating it earlier can make crossterm's reader panic before it has a
+  /// source, leaving the UI without render events.
+  pub fn start(&self) {
     tokio::task::spawn({
-      let tx = tx.clone();
-      let frame_rate = frame_rate.clone();
+      let tx = self.tx.clone();
+      let frame_rate = self.frame_rate.clone();
 
       async move {
         #[cfg(not(test))]
@@ -108,8 +117,6 @@ impl Events {
         }
       }
     });
-
-    Self { rx, tx, frame_rate }
   }
 
   /// Update the render tick rate
