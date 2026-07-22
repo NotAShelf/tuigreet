@@ -322,6 +322,8 @@ fn apply_winsize(rows: u16, cols: u16, xpixel: u16, ypixel: u16) {
   use ffi::{TIOCSWINSZ, WinSize, ioctl};
 
   let fd = std::io::stdout().as_raw_fd();
+  // SAFETY: `ws` is a valid, initialized `repr(C)` buffer for the duration of
+  // this call, and `fd` is borrowed from the live stdout handle.
   unsafe {
     let mut ws = WinSize {
       ws_row:    rows,
@@ -343,6 +345,8 @@ fn apply_winsize(rows: u16, cols: u16, xpixel: u16, ypixel: u16) {
 fn get_winsize(fd: i32) -> Option<(u16, u16, u16, u16)> {
   use ffi::{TIOCGWINSZ, WinSize, ioctl};
 
+  // SAFETY: `ws` is a valid, initialized `repr(C)` output buffer for the
+  // duration of this call; the caller supplies an OS file descriptor.
   unsafe {
     let mut ws = WinSize {
       ws_row:    0,

@@ -224,6 +224,8 @@ pub fn delete_last_user_command(username: &str) {
 }
 
 pub fn get_users(min_uid: u32, max_uid: u32) -> Vec<User> {
+  // SAFETY: `uzers` documents this enumeration as unsafe because it consults
+  // libc account databases; we only consume its returned iterator here.
   let users = unsafe { uzers::all_users() };
 
   users
