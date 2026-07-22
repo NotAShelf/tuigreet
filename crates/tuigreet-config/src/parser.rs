@@ -19,20 +19,27 @@ use crate::{
   env::load_env_variables,
 };
 
-/// Load configuration from CLI path, user config, or system config.
+/// Loads the effective configuration from files, environment, and CLI options.
+///
+/// Without an explicit path, system and user files are layered over defaults.
+/// An explicit path replaces those file layers. Environment variables and CLI
+/// options are always applied last.
 ///
 /// # Arguments
 ///
-/// * `cli_config_path` - Optional explicit config file path from CLI
+/// * `cli_config_path` - An optional configuration file. When present, it
+///   replaces the system and user file layers.
+/// * `cli_matches` - Optional parsed command-line options to apply after all
+///   other configuration sources.
 ///
 /// # Returns
 ///
-/// Merged configuration from system and user configurations, or CLI config if
-/// specified
+/// The effective configuration after applying the selected file layers,
+/// environment variables, and command-line options.
 ///
 /// # Errors
 ///
-/// Returns error if config file cannot be read or parsed
+/// Returns an error if a selected configuration file cannot be read or parsed.
 pub fn load_config(
   cli_config_path: Option<&Path>,
   cli_matches: Option<&getopts::Matches>,
@@ -679,7 +686,14 @@ pub fn extract_cli_config(matches: &getopts::Matches) -> Config {
 }
 
 impl Config {
-  /// Validate the configuration
+  /// Validates cross-field configuration constraints.
+  ///
+  /// Returns non-fatal configuration warnings when validation succeeds.
+  ///
+  /// # Errors
+  ///
+  /// Returns an error when mutually exclusive settings, invalid ranges,
+  /// malformed values, or invalid wrapper commands are configured.
   pub fn validate(
     &self,
     validate_wrappers: bool,

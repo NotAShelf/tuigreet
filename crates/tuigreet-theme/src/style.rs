@@ -96,6 +96,10 @@ impl Theme {
     style
   }
 
+  /// Builds a style by applying each target's configured color in order.
+  ///
+  /// Later targets override earlier targets when they affect the same style
+  /// property.
   #[must_use]
   pub fn of(&self, targets: &[Themed]) -> Style {
     targets
