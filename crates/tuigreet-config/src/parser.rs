@@ -47,17 +47,7 @@ pub fn load_config(
   let mut config = if let Some(path) = cli_config_path {
     load_config_from_path(path)?
   } else {
-    let mut config = Config::default();
-
-    if let Ok(system) = load_system_config() {
-      apply_config_layer(&mut config, system);
-    }
-
-    if let Ok(user) = load_user_config() {
-      apply_config_layer(&mut config, user);
-    }
-
-    config
+    load_default_file_layers()?
   };
 
   let env_vars = load_env_variables();
@@ -388,6 +378,72 @@ fn load_config_from_path(path: &Path) -> Result<Config, ConfigError> {
   }
 }
 
+/// Load system and user config as TOML tables before deserializing them.
+/// This preserves explicit default-valued settings in the higher-priority file.
+fn load_default_file_layers() -> Result<Config, ConfigError> {
+  let mut merged = toml::Table::new();
+  let mut paths = vec![PathBuf::from("/etc/tuigreet/config.toml")];
+  if let Some(config_dir) = config_dir() {
+    paths.push(config_dir.join("tuigreet").join("config.toml"));
+  }
+
+  for path in paths {
+    if !path.exists() {
+      continue;
+    }
+    let content = fs::read_to_string(&path)?;
+    let mut table = toml::from_str::<toml::Table>(&content)
+      .map_err(|error| toml_error(&path, &content, error))?;
+    normalize_legacy_asterisks_table(&mut table);
+    merge_toml_tables(&mut merged, table);
+  }
+
+  let config_value = toml::Value::Table(merged);
+  let secret_mode_specified = config_value
+    .get("secret")
+    .and_then(toml::Value::as_table)
+    .is_some_and(|secret| secret.contains_key("mode"));
+  let mut config: Config = config_value.try_into()?;
+  config.secret_mode_specified = secret_mode_specified;
+  Ok(config)
+}
+
+fn merge_toml_tables(dest: &mut toml::Table, src: toml::Table) {
+  for (key, value) in src {
+    match (dest.get_mut(&key), value) {
+      (Some(toml::Value::Table(dest)), toml::Value::Table(src)) => {
+        merge_toml_tables(dest, src);
+      },
+      (_, value) => {
+        dest.insert(key, value);
+      },
+    }
+  }
+}
+
+fn normalize_legacy_asterisks_table(table: &mut toml::Table) {
+  let Some(asterisks) = table
+    .get("display")
+    .and_then(toml::Value::as_table)
+    .and_then(|display| display.get("asterisks"))
+    .and_then(toml::Value::as_bool)
+  else {
+    return;
+  };
+
+  let secret = table
+    .entry("secret")
+    .or_insert_with(|| toml::Value::Table(toml::Table::new()));
+  let Some(secret) = secret.as_table_mut() else {
+    return;
+  };
+  secret.entry("mode").or_insert_with(|| {
+    toml::Value::String(
+      if asterisks { "characters" } else { "hidden" }.to_string(),
+    )
+  });
+}
+
 fn legacy_secret_mode(asterisks: bool) -> SecretMode {
   if asterisks {
     SecretMode::Characters
@@ -454,28 +510,6 @@ fn toml_error(
       span.start
     ),
   }
-}
-
-/// Load system configuration from /etc/tuigreet/config.toml.
-fn load_system_config() -> Result<Config, ConfigError> {
-  let path = PathBuf::from("/etc/tuigreet/config.toml");
-  if path.exists() {
-    load_config_from_path(&path)
-  } else {
-    Ok(Config::default())
-  }
-}
-
-/// Load user configuration from XDG config directory
-/// (`~/.config/tuigreet/config.toml`).
-fn load_user_config() -> Result<Config, ConfigError> {
-  if let Some(config_dir) = config_dir() {
-    let path = config_dir.join("tuigreet").join("config.toml");
-    if path.exists() {
-      return load_config_from_path(&path);
-    }
-  }
-  Ok(Config::default())
 }
 
 /// Extract CLI arguments into a Config struct (highest priority source)
@@ -728,6 +762,23 @@ impl Config {
       return Err(ConfigError::InvalidRange(
         "user_menu.min_uid must not exceed user_menu.max_uid".to_string(),
       ));
+    }
+
+    if self.layout.width == 0 {
+      return Err(ConfigError::Validation(
+        "layout.width must be greater than 0".to_string(),
+      ));
+    }
+    for (name, padding) in [
+      ("layout.window_padding", self.layout.window_padding),
+      ("layout.container_padding", self.layout.container_padding),
+      ("layout.prompt_padding", self.layout.prompt_padding),
+    ] {
+      if padding.is_some_and(|padding| padding > 10) {
+        return Err(ConfigError::Validation(format!(
+          "{name} must not exceed 10"
+        )));
+      }
     }
 
     // Check keybindings are distinct
@@ -1028,6 +1079,24 @@ fn command_exists(command: &str) -> bool {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn toml_layers_preserve_explicit_default_values() {
+    let mut system: toml::Table =
+      toml::from_str("[display]\nshow_time = true\n[layout]\nwidth = 120\n")
+        .expect("system config is valid");
+    let user: toml::Table =
+      toml::from_str("[display]\nshow_time = false\n[layout]\nwidth = 80\n")
+        .expect("user config is valid");
+
+    merge_toml_tables(&mut system, user);
+    let config: Config = toml::Value::Table(system)
+      .try_into()
+      .expect("merged config is valid");
+
+    assert!(!config.display.show_time);
+    assert_eq!(config.layout.width, 80);
+  }
 
   #[test]
   fn canonical_secret_mode_wins_over_legacy_alias() {
