@@ -105,7 +105,15 @@ impl ConfigWatcher {
               // Add a small delay to avoid partial writes
               tokio::time::sleep(Duration::from_millis(100)).await;
 
-              match Self::reload_config(&watch_path).await {
+              let new_config = {
+                let greeter_guard = greeter.read().await;
+                Self::reload_config(
+                  config_path.as_deref(),
+                  greeter_guard.config.as_ref(),
+                )
+              };
+
+              match new_config {
                 Ok(new_config) => {
                   if let Err(e) =
                     Self::apply_config_to_greeter(&greeter, new_config).await
@@ -146,12 +154,13 @@ impl ConfigWatcher {
     }
   }
 
-  async fn reload_config(
-    config_path: &Path,
+  fn reload_config(
+    cli_config_path: Option<&Path>,
+    cli_matches: Option<&getopts::Matches>,
   ) -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
-    debug!("Reloading config from: {}", config_path.display());
+    debug!("Reloading configuration");
 
-    let config = load_config(Some(config_path), None)?;
+    let config = load_config(cli_config_path, cli_matches)?;
 
     match config.validate(false) {
       Ok(warnings) => {
@@ -175,20 +184,17 @@ impl ConfigWatcher {
   ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut greeter_guard = greeter.write().await;
 
-    // Store the old config for rollback if needed
-    let _old_config = greeter_guard.loaded_config.clone();
-
-    // Apply the new configuration
+    // Applying an already validated configuration replaces all
+    // configuration-owned runtime state while holding this write lock.
     greeter_guard.apply_config(&config);
 
     // Apply theme configuration
-    greeter_guard.apply_theme_config(&config.theme, None);
+    let cli_theme = greeter_guard.config().opt_str("theme");
+    greeter_guard.apply_theme_config(&config.theme, cli_theme.as_deref());
 
     // Store the new config
     greeter_guard.loaded_config = Some(config);
 
-    // XXX: We don't rollback on theme application failure since it's
-    // non-critical The config has been successfully applied at this point
     info!("Config hot reload completed successfully");
     Ok(())
   }

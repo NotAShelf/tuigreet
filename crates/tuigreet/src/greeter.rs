@@ -1319,25 +1319,27 @@ impl Greeter {
     // General
     self.debug = config.general.debug;
     // Session
-    if let Some(command) = &config.session.command {
-      self.session_source = SessionSource::DefaultCommand(
-        command.clone(),
-        Some(config.session.environments.clone())
-          .filter(|environments| !environments.is_empty()),
-      );
-    }
+    self.session_source = config.session.command.as_ref().map_or_else(
+      SessionSource::default,
+      |command| {
+        SessionSource::DefaultCommand(
+          command.clone(),
+          (!config.session.environments.is_empty())
+            .then(|| config.session.environments.clone()),
+        )
+      },
+    );
+    self.session_paths.clear();
     for dir in &config.session.sessions_dirs {
       self.add_session_path(PathBuf::from(dir), SessionType::Wayland);
     }
     for dir in &config.session.xsessions_dirs {
       self.add_session_path(PathBuf::from(dir), SessionType::X11);
     }
-    if config.session.session_wrapper.is_some() {
-      self.session_wrapper = config.session.session_wrapper.clone();
-    }
-    if config.session.xsession_wrapper.is_some()
-      && !self.config().opt_present("no-xsession-wrapper")
-    {
+    self
+      .session_wrapper
+      .clone_from(&config.session.session_wrapper);
+    if !self.config().opt_present("no-xsession-wrapper") {
       self.xsession_wrapper = config.session.xsession_wrapper.clone();
     }
     // Display
@@ -1365,6 +1367,8 @@ impl Greeter {
         options:  get_users(config.user_menu.min_uid, config.user_menu.max_uid),
         selected: 0,
       };
+    } else {
+      self.users = Menu::default();
     }
     // Power
     self
@@ -1518,6 +1522,39 @@ mod test {
     greeter.remove_prompt();
 
     assert_eq!(greeter.prompt, None);
+  }
+
+  #[test]
+  fn applying_config_replaces_session_state() {
+    let mut greeter = Greeter::default();
+    greeter.config = Some(
+      Greeter::options()
+        .parse(Vec::<String>::new())
+        .expect("empty CLI parses"),
+    );
+
+    let mut configured = Config::default();
+    configured.session.command = Some("first".into());
+    configured.session.sessions_dirs = vec!["/first".into()];
+    configured.session.session_wrapper = Some("wrapper".into());
+    configured.user_menu.enabled = true;
+    greeter.apply_config(&configured);
+
+    let mut replacement = Config::default();
+    replacement.session.sessions_dirs = vec!["/second".into()];
+    greeter.apply_config(&replacement);
+
+    assert!(matches!(greeter.session_source, SessionSource::None));
+    assert_eq!(greeter.session_paths.len(), 2);
+    assert!(
+      greeter
+        .session_paths
+        .iter()
+        .any(|(path, _)| path == "/second")
+    );
+    assert!(greeter.session_wrapper.is_none());
+    assert!(!greeter.user_menu);
+    assert!(greeter.users.options.is_empty());
   }
 
   #[tokio::test]
