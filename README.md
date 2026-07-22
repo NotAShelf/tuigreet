@@ -321,6 +321,8 @@ mutate_chance = 0.02 # per-cell glyph shimmer probability
 sessions_dirs = ["/usr/share/wayland-sessions", "/usr/share/xsessions"]
 xsessions_dirs = []
 environments = []
+kmscon = "auto"
+kmscon_launcher = "kmscon-launch-gui"
 
 [power]
 use_setsid = false
@@ -482,6 +484,38 @@ rows = 52
 ```
 
 `[terminal]` takes precedence over `[[outputs]]` when both are set.
+
+### KMSCON Support
+
+tuigreet can run inside [KMSCON](https://github.com/kmscon/kmscon) for better
+font rendering, colors, keyboard handling, and monitor control than the kernel
+console. Configure greetd to start KMSCON as the terminal emulator and run
+tuigreet as its login child:
+
+```toml
+[default_session]
+command = "kmscon --no-reset-env --oneshot --login -- tuigreet"
+user = "greeter"
+```
+
+`--no-reset-env` preserves `GREETD_SOCK` for tuigreet. `--oneshot` prevents
+KMSCON from respawning tuigreet after authentication succeeds.
+
+When a graphical session starts, KMSCON must release DRM master before the
+Wayland compositor or X server can take over. tuigreet does this by wrapping
+graphical session commands with `kmscon-launch-gui` when KMSCON mode is active.
+The default config is:
+
+```toml
+[session]
+kmscon = "auto"
+kmscon_launcher = "kmscon-launch-gui"
+```
+
+`auto` enables the handoff when `TERM=kmscon`. Use `enabled` to force it, or
+`disabled` if you intentionally run non-graphical commands inside KMSCON. If
+`kmscon-launch-gui` is not on the session user's `PATH`, set `kmscon_launcher`
+to its absolute path.
 
 ### Sessions
 
