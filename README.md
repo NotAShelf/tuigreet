@@ -2,35 +2,10 @@
 
 [greetd]: https://git.sr.ht/~kennylevinsen/greetd
 [tuigreet]: https://github.com/apognu/tuigreet
-[features]: #features
 
-Graphical console greeter for [greetd], fork of [tuigreet] for a more modern and
-hackable codebase suitable for future extension.
-
-> [!IMPORTANT]
-> This repository has been forked from [tuigreet] due to the upstream
-> inactivity, and the following radio silence due to the upstream inactivity,
-> and the following radio silence. While I do hope that upstream comes back
-> alive eventually, I have elected to maintain this fork for the time being, and
-> I will _likely_ continue to do so for the foreseeable future due to my
-> personal gripes with the previous state of the codebase.
->
-> There are many goals for this fork, including but not limited to improving
-> support for launching standalone graphical sessions. For example, if I want to
-> handle `graphical-session.target` and friends, I'm required to use a session
-> wrapper like UWSM or write my own wrapper script. I find the status quo to be
-> less than desirable, _as I'm already using a login manager and a greeter. Why
-> should I wrap for the 3rd time_?
->
-> That in mind, this repository has been created as a fork to maintain tuigreet
-> on my own time while incrementally improving the codebase, merging old PRs
-> that have been stale for too long, fixing bugs and adding more features as I
-> need them. _If_ you are interested in using this, great. Let me know what you
-> need, and I'll see what I can do for you. If you want to contribute, that's
-> even better! Open a PR, and let's see where it takes us.
->
-> The [features] section below shall contain a semi-maintained list of new
-> features on top of the old features that I wanted to document explicitly.
+Stylish, modern and extensible greeter for [greetd], built on top of the
+original [tuigreet] foundation with a focus on improved maintainability, a
+cleaner codebase, and a more polished user experience.
 
 ## Features
 
@@ -66,7 +41,7 @@ We also port _some_ of the previously open PRs, such as:
 
 ## Usage
 
-![Screenshot of tuigreet](https://github.com/notashelf/tuigreet/blob/master/contrib/assets/screenshot.png)
+![Screenshot of tuigreet authentication interface](https://github.com/notashelf/tuigreet/blob/master/contrib/assets/screenshot.png)
 
 The default configuration of tuigreet is quite minimal, visually speaking. It
 only displays the authentication prompt and some minor information in the status
@@ -156,14 +131,20 @@ release, but you compile it yourself from the latest commit Those can be
 installed via your preferred AUR helper, e.g.:
 
 ```bash
-yay -S greetd-tuigreet-fork-bin
+# Install the built binary from the AUR. This uses tuigreet's own releases.
+$ yay -S greetd-tuigreet-fork-bin
+
+# Alternatively, use the -git version to build from source. This depends on
+# the Rust toolchain.
+$ yay -S greetd-tuigreet-fork-git
 ```
 
 ### With Nix
 
-The main method of using the package for this fork is to use the package
-provided by the flake. The easiest way of doing so is creating an overlay as
-above but point `tuigreet` to
+The primary method of installing tuigreet and even developing it is _Nix_. We
+provide a Nix flake to build the package from source using Nix. The easiest way
+of using the flake would be to create an overlay for yourself, overriding
+`pkgs.tuigreet` with the flake package. Simply point `tuigreet` to
 `inputs.tuigreet.packages.${prev.hostPlatform.system}.tuigreet` instead of
 overriding the `src`. This will completely replace the derivation, and build
 with the correct source automatically. In most cases **this is preferred to
@@ -178,7 +159,7 @@ example, you may create an overlay to override `pkgs.tuigreet` as follows:
   (final: prev: {
     tuigreet = prev.tuigreet.overrideAttrs (
       finalAttrs: prevAttrs: {
-        version = "0.11.0";
+        version = "0.11.0"; # remember to update this version!
 
         src = final.fetchFromGitHub {
           inherit (prevAttrs.src) repo;
@@ -220,11 +201,14 @@ $ cargo build --release
 # You may then move it to somewhere you can use it. If on NixOS, refer to above
 # steps instead of trying to copy the binary.
 # $ mv target/release/tuigreet /usr/local/bin/tuigreet
+# You can also use cargo to build and install from Git:
+# $ cargo install --git https://github.com/notashelf/stash --locked
 ```
 
 > [!NOTE]
 > Cache directory must be created for `--remember*` features to work. The
-> directory must be owned by the user running the greeter.
+> directory must be owned by the user running the greeter. This is handled
+> automatically if using the NixOS module in Nixpkgs.
 
 ```bash
 # If cache is missing or owned by the wrong user, you may run the following
@@ -302,6 +286,9 @@ max_uid = 60000
 [secret]
 mode = "characters"  # "hidden" or "characters"
 characters = "*"
+
+# `[display] asterisks = true|false` remains supported for compatibility but is
+# deprecated. Migrate it to `secret.mode`; `secret.mode` wins if both are set.
 
 [keybindings]
 command = 2     # F2
@@ -674,5 +661,28 @@ Following the original source, this project is made available under GNU General
 Public License version 3 (GPLv3). See [LICENSE](LICENSE) for more details on the
 exact conditions. An online copy is provided
 [here](https://www.gnu.org/licenses/gpl-3.0.en.html).
+
+### Attributions
+
+This repository has been forked from [tuigreet] due to the upstream inactivity,
+and the following radio silence due to the upstream inactivity, and the
+following radio silence. While I do hope that upstream comes back alive
+eventually, I have elected to maintain this fork for the time being, and I will
+_likely_ continue to do so for the foreseeable future due to my personal gripes
+with the previous state of the codebase. In short, this repository has been
+created as a fork to maintain tuigreet within my own time while incrementally
+improving the codebase, merging old PRs that have been stale for too long,
+fixing bugs and adding more features as I need them. Ultimately, I've "upgraded"
+the fork status to become almost entirely standalone with drastic refactors on
+the codebase. _If_ you are interested in using this fork, great. Let me know
+what you need, and I'll see what I can do for you. If you want to contribute,
+that's even better! Open a PR, and let's see where it takes us.
+
+A big thank you to the [original author](https://github.com/apognu) for their
+excellent efforts on tuigreet. While the upstream remains silent at the time of
+writing, it has served as a great base for this fork and ultimately the greeter
+it has evolved to be. I also want to extend my changes to any and all
+contributors who have supported tuigreet through issues and pull request on both
+repositories.
 
 <!-- markdownlint-enable MD059 -->
