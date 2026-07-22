@@ -367,21 +367,21 @@ export TUIGREET_TIME_POSITION=top      # default, top, bottom, hidden
 export TUIGREET_STATUS_POSITION=bottom # default, top, bottom, hidden
 
 # Remember options
-export TUIGREET_REMEMBER_USERNAME=true
+export TUIGREET_REMEMBER=true
 export TUIGREET_REMEMBER_SESSION=false
 export TUIGREET_REMEMBER_USER_SESSION=true
 
 # User menu configuration
 export TUIGREET_USER_MENU=true
-export TUIGREET_MIN_UID=1000
-export TUIGREET_MAX_UID=60000
+export TUIGREET_USER_MENU_MIN_UID=1000
+export TUIGREET_USER_MENU_MAX_UID=60000
 
 # Secret display
 export TUIGREET_SECRET_MODE=characters  # hidden, characters
 export TUIGREET_SECRET_CHARACTERS="●"
 
 # Session configuration
-export TUIGREET_COMMAND="sway"
+export TUIGREET_SESSION_COMMAND="sway"
 export TUIGREET_SESSIONS_DIRS="/usr/share/wayland-sessions:/custom/sessions"
 export TUIGREET_XSESSIONS_DIRS="/usr/share/xsessions"
 export TUIGREET_SESSION_WRAPPER="systemd-cat -t sway"
@@ -389,7 +389,7 @@ export TUIGREET_XSESSION_WRAPPER="startx"
 export TUIGREET_ENVIRONMENTS="WAYLAND_DISPLAY:DISPLAY"
 
 # Power options
-export TUIGREET_USE_SETSID=false
+export TUIGREET_POWER_USE_SETSID=false
 
 # Keybindings (F-key numbers)
 export TUIGREET_KB_COMMAND=2   # F2
