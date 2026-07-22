@@ -1319,9 +1319,9 @@ impl Greeter {
     // General
     self.debug = config.general.debug;
     // Session
-    if config.session.command.is_some() {
+    if let Some(command) = &config.session.command {
       self.session_source = SessionSource::DefaultCommand(
-        config.session.command.clone().unwrap(),
+        command.clone(),
         Some(config.session.environments.clone())
           .filter(|environments| !environments.is_empty()),
       );
@@ -1370,6 +1370,11 @@ impl Greeter {
     self
       .set_power_command(PowerOption::Shutdown, config.power.shutdown.clone());
     self.set_power_command(PowerOption::Reboot, config.power.reboot.clone());
+    self.set_power_command(PowerOption::Suspend, config.power.suspend.clone());
+    self.set_power_command(
+      PowerOption::Hibernate,
+      config.power.hibernate.clone(),
+    );
     self.power_setsid = config.power.use_setsid;
     // Secret
     match config.secret.mode {
@@ -1484,6 +1489,8 @@ mod test {
     ui::sessions::{SessionSource, SessionType},
   };
 
+  type CommandLineTest = (&'static [&'static str], bool, Option<fn(&Greeter)>);
+
   #[test]
   fn test_prompt_width() {
     let mut greeter = Greeter::default();
@@ -1515,7 +1522,7 @@ mod test {
 
   #[tokio::test]
   async fn test_command_line_arguments() {
-    let table: &[(&[&str], _, Option<fn(&Greeter)>)] = &[
+    let table: &[CommandLineTest] = &[
       // No arguments
       (&[], true, None),
       // Valid combinations
@@ -1693,6 +1700,8 @@ mod test {
     let mut config = Config::default();
     config.power.shutdown = Some("loginctl poweroff".to_string());
     config.power.reboot = Some("loginctl reboot".to_string());
+    config.power.suspend = Some("loginctl suspend".to_string());
+    config.power.hibernate = Some("loginctl hibernate".to_string());
     config.power.use_setsid = false;
     greeter.apply_config(&config);
 
@@ -1704,6 +1713,14 @@ mod test {
     assert!(greeter.powers.options.iter().any(|power| {
       power.action == PowerOption::Reboot
         && power.command.as_deref() == Some("loginctl reboot")
+    }));
+    assert!(greeter.powers.options.iter().any(|power| {
+      power.action == PowerOption::Suspend
+        && power.command.as_deref() == Some("loginctl suspend")
+    }));
+    assert!(greeter.powers.options.iter().any(|power| {
+      power.action == PowerOption::Hibernate
+        && power.command.as_deref() == Some("loginctl hibernate")
     }));
   }
 }
