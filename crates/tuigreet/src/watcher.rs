@@ -184,9 +184,21 @@ impl ConfigWatcher {
   ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut greeter_guard = greeter.write().await;
 
+    // A tracing subscriber is installed once at startup and cannot be safely
+    // replaced here. Keep its settings stable until the next restart.
+    let logger_settings = (greeter_guard.debug, greeter_guard.logfile.clone());
+    if greeter_guard.loaded_config.as_ref().is_some_and(|old| {
+      old.general.debug != config.general.debug
+        || old.general.log_file != config.general.log_file
+    }) {
+      warn!("general.debug and general.log_file changes require a restart");
+    }
+
     // Applying an already validated configuration replaces all
     // configuration-owned runtime state while holding this write lock.
     greeter_guard.apply_config(&config);
+    (greeter_guard.debug, greeter_guard.logfile) = logger_settings;
+    greeter_guard.reload_sessions();
 
     // Apply theme configuration
     let cli_theme = greeter_guard.config().opt_str("theme");

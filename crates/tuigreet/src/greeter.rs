@@ -268,10 +268,6 @@ impl Greeter {
         process::exit(1);
       }
 
-      // Initialize logger immediately after CLI parsing so that any errors
-      // during config loading are captured in the debug log.
-      greeter.logger = crate::init_logger(&greeter);
-
       // Load configuration after CLI parsing
       if !greeter.config().opt_present("no-config") {
         let config_path = greeter
@@ -337,6 +333,7 @@ impl Greeter {
         }
       }
 
+      greeter.logger = crate::init_logger(&greeter);
       greeter.connect().await;
     }
 
@@ -551,14 +548,14 @@ impl Greeter {
     if let Some(value) = self.option("container-padding")
       && let Ok(padding) = value.parse::<u16>()
     {
-      return padding + 1;
+      return padding.saturating_add(1);
     }
 
     // Then check loaded config
     if let Some(ref config) = self.loaded_config
       && let Some(padding) = config.layout.container_padding
     {
-      return padding + 1;
+      return padding.saturating_add(1);
     }
 
     2
@@ -1318,6 +1315,7 @@ impl Greeter {
     use tuigreet_config::SecretMode;
     // General
     self.debug = config.general.debug;
+    self.logfile.clone_from(&config.general.log_file);
     // Session
     self.session_source = config.session.command.as_ref().map_or_else(
       SessionSource::default,
@@ -1407,6 +1405,33 @@ impl Greeter {
     // Animation
     self.set_background_from_config(&config.background);
     self.populate_backgrounds_menu();
+  }
+
+  pub fn reload_sessions(&mut self) {
+    let selected_path = self
+      .sessions
+      .options
+      .get(self.sessions.selected)
+      .and_then(|session| session.path.clone());
+    let sessions = get_sessions(self).unwrap_or_default();
+    self.sessions.options = sessions;
+    self.sessions.selected = selected_path
+      .as_ref()
+      .and_then(|path| {
+        self
+          .sessions
+          .options
+          .iter()
+          .position(|session| session.path.as_ref() == Some(path))
+      })
+      .unwrap_or(0);
+    if matches!(self.session_source, SessionSource::Session(_)) {
+      self.session_source = if self.sessions.options.is_empty() {
+        SessionSource::default()
+      } else {
+        SessionSource::Session(self.sessions.selected)
+      };
+    }
   }
 
   // Apply theme configuration
@@ -1555,6 +1580,22 @@ mod test {
     assert!(greeter.session_wrapper.is_none());
     assert!(!greeter.user_menu);
     assert!(greeter.users.options.is_empty());
+  }
+
+  #[test]
+  fn applying_config_updates_log_file() {
+    let mut greeter = Greeter::default();
+    let mut config = Config::default();
+    config.general.log_file = "/tmp/configured-tuigreet.log".into();
+    greeter.config = Some(
+      Greeter::options()
+        .parse(Vec::<String>::new())
+        .expect("empty CLI parses"),
+    );
+
+    greeter.apply_config(&config);
+
+    assert_eq!(greeter.logfile, "/tmp/configured-tuigreet.log");
   }
 
   #[tokio::test]
