@@ -347,6 +347,8 @@ fn wrap_session_command<'a>(
 ) -> (Cow<'a, str>, Vec<String>) {
   let mut env: Vec<String> = vec![];
 
+  let mut command = Cow::Borrowed(default.command());
+
   match session {
     // If the target is a defined session, we *should* be able to deduce all the
     // environment we need from the desktop file.
@@ -375,10 +377,10 @@ fn wrap_session_command<'a>(
 
       if *session_type == SessionType::X11 {
         if let Some(ref wrap) = greeter.xsession_wrapper {
-          return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
+          command = Cow::Owned(format!("{} {}", wrap, default.command()));
         }
       } else if let Some(ref wrap) = greeter.session_wrapper {
-        return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
+        command = Cow::Owned(format!("{} {}", wrap, default.command()));
       }
     },
 
@@ -386,7 +388,7 @@ fn wrap_session_command<'a>(
       // If a wrapper script is used, assume that it is able to set up the
       // required environment.
       if let Some(ref wrap) = greeter.session_wrapper {
-        return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
+        command = Cow::Owned(format!("{} {}", wrap, default.command()));
       }
       // Otherwise, set up the environment from the provided argument.
       if let Some(base_env) = default.env() {
@@ -395,7 +397,11 @@ fn wrap_session_command<'a>(
     },
   }
 
-  (Cow::Borrowed(default.command()), env)
+  if greeter.quiet {
+    (Cow::Owned(format!("{command} >/dev/null 2>&1")), env)
+  } else {
+    (command, env)
+  }
 }
 
 #[cfg(test)]

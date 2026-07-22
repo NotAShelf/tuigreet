@@ -28,6 +28,17 @@ pub fn load_env_variables() -> Config {
     config.general.log_file = value;
   }
 
+  if let Ok(value) = env::var("TUIGREET_QUIET") {
+    if let Ok(quiet) = parse_bool(&value) {
+      config.general.quiet = quiet;
+    } else {
+      tracing::warn!(
+        "Invalid TUIGREET_QUIET value: '{}', expected true/false",
+        value
+      );
+    }
+  }
+
   // Session config
   if let Ok(value) = env::var("TUIGREET_SESSION_COMMAND") {
     config.session.command = Some(value);

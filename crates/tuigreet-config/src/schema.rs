@@ -142,6 +142,10 @@ pub struct GeneralConfig {
   /// Log file path
   #[serde(default = "default_log_file")]
   pub log_file: String,
+
+  // quiet session launch
+  #[serde(default)]
+  pub quiet: bool,
 }
 
 impl Default for GeneralConfig {
@@ -149,6 +153,7 @@ impl Default for GeneralConfig {
     Self {
       debug:    false,
       log_file: default_log_file(),
+      quiet:    false,
     }
   }
 }
