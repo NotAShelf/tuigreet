@@ -74,9 +74,14 @@ where
 
     for (index, option) in self.options.iter().enumerate() {
       let name = option.format();
-      let name = format!("{:1$}", name, greeter.width() as usize - 4);
+      let name = format!("{:1$}", name, width.saturating_sub(4) as usize);
 
-      let frame = Rect::new(x + 2, y + 2 + index as u16, width - 4, 1);
+      let frame = Rect::new(
+        x.saturating_add(2),
+        y.saturating_add(2).saturating_add(index as u16),
+        width.saturating_sub(4),
+        1,
+      );
       let option_text = self.get_option(name, index);
       let option = Paragraph::new(option_text);
 

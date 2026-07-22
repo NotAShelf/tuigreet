@@ -51,19 +51,24 @@ pub fn get_height(greeter: &Greeter) -> u16 {
 
   let initial = match greeter.mode {
     Mode::Username | Mode::Action | Mode::Command => {
-      (2 * container_padding) + 1
+      container_padding.saturating_mul(2).saturating_add(1)
     },
     Mode::Password => {
       match greeter.prompt {
-        Some(_) => (2 * container_padding) + prompt_padding + 2,
-        None => (2 * container_padding) + 1,
+        Some(_) => {
+          container_padding
+            .saturating_mul(2)
+            .saturating_add(prompt_padding)
+            .saturating_add(2)
+        },
+        None => container_padding.saturating_mul(2).saturating_add(1),
       }
     },
     Mode::Users
     | Mode::Sessions
     | Mode::Power
     | Mode::Background
-    | Mode::Processing => 2 * container_padding,
+    | Mode::Processing => container_padding.saturating_mul(2),
   };
 
   match greeter.mode {
@@ -72,7 +77,7 @@ pub fn get_height(greeter: &Greeter) -> u16 {
     | Mode::Power
     | Mode::Background
     | Mode::Processing => initial,
-    _ => initial + greeting_height,
+    _ => initial.saturating_add(greeting_height),
   }
 }
 
@@ -83,8 +88,10 @@ pub fn get_rect_bounds(
   area: Rect,
   items: usize,
 ) -> (u16, u16, u16, u16) {
-  let width = greeter.width();
-  let box_height: u16 = get_height(greeter) + items as u16;
+  let width = greeter.width().min(area.width);
+  let box_height = get_height(greeter)
+    .saturating_add(u16::try_from(items).unwrap_or(u16::MAX))
+    .min(area.height);
 
   // Account for the message area rendered below the container so that the
   // combined block (box + message) is centered rather than just the box.
@@ -108,8 +115,8 @@ pub fn get_rect_bounds(
   } else {
     (x, width)
   };
-  let (y, box_height) = if (y + total_height) >= area.height {
-    (0, box_height)
+  let (y, box_height) = if y.saturating_add(total_height) >= area.height {
+    (0, box_height.min(area.height))
   } else {
     (y, box_height)
   };
@@ -131,7 +138,9 @@ pub fn get_input_width(
     Some(label) => label.chars().count(),
   };
 
-  width - label_width as u16 - 4 - 1
+  width
+    .saturating_sub(u16::try_from(label_width).unwrap_or(u16::MAX))
+    .saturating_sub(5)
 }
 
 pub const fn get_cursor_offset(greeter: &mut Greeter, length: usize) -> i16 {
@@ -164,7 +173,9 @@ pub fn get_greeting_height(
     };
 
     let paragraph = Paragraph::new(text.clone()).wrap(Wrap { trim: false });
-    let height = paragraph.line_count(width - (2 * padding)) + 1;
+    let height = paragraph
+      .line_count(width.saturating_sub(padding.saturating_mul(2)).max(1))
+      .saturating_add(1);
 
     (Some(paragraph), height as u16)
   } else {
@@ -181,9 +192,14 @@ pub fn get_message_height(
     let width = greeter.width();
     let paragraph =
       Paragraph::new(message.trim_end()).wrap(Wrap { trim: true });
-    let height = paragraph.line_count(width - 4);
+    let height = paragraph.line_count(width.saturating_sub(4).max(1));
 
-    (Some(paragraph), height as u16 + padding)
+    (
+      Some(paragraph),
+      u16::try_from(height)
+        .unwrap_or(u16::MAX)
+        .saturating_add(padding),
+    )
   } else {
     (None, fallback)
   }
@@ -216,6 +232,17 @@ mod test {
     greeter.mode = Mode::Username;
 
     assert_eq!(get_height(&greeter), 3);
+  }
+
+  #[test]
+  fn tiny_width_has_no_underflow() {
+    let mut greeter = Greeter::default();
+    greeter.config = Greeter::options().parse(Vec::<String>::new()).ok();
+    assert_eq!(get_input_width(&greeter, 1, &Some("Username".into())), 0);
+    assert_eq!(
+      get_rect_bounds(&greeter, Rect::new(0, 0, 1, 1), 0),
+      (0, 0, 1, 1)
+    );
   }
 
   // +-----------+

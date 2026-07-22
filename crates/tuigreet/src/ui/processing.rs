@@ -8,7 +8,7 @@ use tui::{
 
 use crate::{
   Greeter,
-  ui::{Frame, util::get_height},
+  ui::{Frame, util::get_rect_bounds},
 };
 
 pub fn draw_with_area(
@@ -16,12 +16,7 @@ pub fn draw_with_area(
   f: &mut Frame,
   area: Rect,
 ) -> Result<(u16, u16), Box<dyn Error>> {
-  let size = area;
-
-  let width = greeter.width();
-  let height: u16 = get_height(greeter) + 1;
-  let x = (size.width - width) / 2;
-  let y = (size.height - height) / 2;
+  let (x, y, width, height) = get_rect_bounds(greeter, area, 1);
 
   let container = Rect::new(x, y, width, height);
 
@@ -31,10 +26,10 @@ pub fn draw_with_area(
 
   let container_padding = greeter.container_padding();
   let frame = Rect::new(
-    x + container_padding,
-    y + container_padding,
-    width - (2 * container_padding),
-    height - (2 * container_padding),
+    x.saturating_add(container_padding),
+    y.saturating_add(container_padding),
+    width.saturating_sub(container_padding.saturating_mul(2)),
+    height.saturating_sub(container_padding.saturating_mul(2)),
   );
 
   let block = Block::default()
