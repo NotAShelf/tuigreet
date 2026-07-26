@@ -69,6 +69,7 @@ pub struct Greeter {
   pub logfile: String,
   pub logger:  Option<WorkerGuard>,
 
+  pub numlock:       bool,
   pub locale:        Locale,
   pub config:        Option<Matches>,
   pub loaded_config: Option<tuigreet_config::Config>, /* store loaded TOML
@@ -181,6 +182,7 @@ impl Default for Greeter {
       debug:                      false,
       logfile:                    DEFAULT_LOG_FILE.to_string(),
       logger:                     None,
+      numlock:                    false,
       locale:                     DEFAULT_LOCALE,
       config:                     None,
       loaded_config:              None,
@@ -818,6 +820,7 @@ impl Greeter {
     opts.optopt("", "config", "path to configuration file", "PATH");
     opts.optflag("", "no-config", "disable loading configuration files");
     opts.optflag("", "dump-config", "print effective configuration and exit");
+    opts.optflag("", "numlock", "enable numlock on startup");
     opts.optflag("", "list-outputs", "list available DRM outputs and exit");
 
     opts.optopt(
@@ -1316,6 +1319,7 @@ impl Greeter {
     // General
     self.debug = config.general.debug;
     self.logfile.clone_from(&config.general.log_file);
+    self.numlock = config.general.numlock;
     // Session
     self.session_source = config.session.command.as_ref().map_or_else(
       SessionSource::default,

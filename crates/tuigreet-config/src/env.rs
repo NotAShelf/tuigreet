@@ -28,6 +28,17 @@ pub fn load_env_variables() -> Config {
     config.general.log_file = value;
   }
 
+  if let Ok(value) = env::var("TUIGREET_NUMLOCK") {
+    if let Ok(numlock) = parse_bool(&value) {
+      config.general.numlock = numlock;
+    } else {
+      tracing::warn!(
+        "Invalid TUIGREET_NUMLOCK value: '{}', expected true/false",
+        value
+      );
+    }
+  }
+
   // Session config
   if let Ok(value) = env::var("TUIGREET_SESSION_COMMAND") {
     config.session.command = Some(value);
