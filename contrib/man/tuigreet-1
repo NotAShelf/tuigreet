@@ -1,0 +1,312 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH tuigreet 1  "tuigreet 0.11.0" 
+.SH NAME
+tuigreet \- Stylish graphical console greeter for greetd
+.SH SYNOPSIS
+\fBtuigreet\fR [\fB\-\-system\-config\fR] [\fB\-\-config\fR] [\fB\-\-no\-config\fR] [\fB\-d\fR|\fB\-\-debug\fR] [\fB\-l\fR|\fB\-\-log\-file\fR] [\fB\-m\fR|\fB\-\-mock\fR] [\fB\-n\fR|\fB\-\-numlock\fR] [\fB\-c\fR|\fB\-\-cmd\fR] [\fB\-s\fR|\fB\-\-sessions\fR] [\fB\-x\fR|\fB\-\-xsessions\fR] [\fB\-\-session\-wrapper\fR] [\fB\-\-xsession\-wrapper\fR] [\fB\-\-env\fR] [\fB\-t\fR|\fB\-\-time\fR] [\fB\-\-time\-format\fR] [\fB\-g\fR|\fB\-\-greeting\fR] [\fB\-\-title\fR] [\fB\-\-custom\-title\fR] [\fB\-i\fR|\fB\-\-issue\fR] [\fB\-b\fR|\fB\-\-battery\fR] [\fB\-\-greet\-align\fR] [\fB\-u\fR|\fB\-\-user\fR] [\fB\-r\fR|\fB\-\-remember\fR] [\fB\-\-remember\-session\fR] [\fB\-\-remember\-user\-session\fR] [\fB\-\-user\-menu\fR] [\fB\-\-user\-menu\-min\-uid\fR] [\fB\-\-user\-menu\-max\-uid\fR] [\fB\-\-secret\-mode\fR] [\fB\-\-secret\-characters\fR] [\fB\-w\fR|\fB\-\-width\fR] [\fB\-\-window\-padding\fR] [\fB\-\-container\-padding\fR] [\fB\-\-prompt\-padding\fR] [\fB\-\-time\-position\fR] [\fB\-\-status\-position\fR] [\fB\-\-battery\-position\fR] [\fB\-\-show\-reset\fR] [\fB\-\-show\-command\fR] [\fB\-\-show\-session\fR] [\fB\-\-show\-power\fR] [\fB\-\-show\-background\fR] [\fB\-\-show\-session\-status\fR] [\fB\-\-show\-caps\-lock\fR] [\fB\-\-power\-shutdown\fR] [\fB\-\-power\-reboot\fR] [\fB\-\-power\-suspend\fR] [\fB\-\-power\-hibernate\fR] [\fB\-\-power\-use\-setsid\fR] [\fB\-\-kb\-command\fR] [\fB\-\-kb\-sessions\fR] [\fB\-\-kb\-power\fR] [\fB\-\-kb\-background\fR] [\fB\-\-theme\-border\fR] [\fB\-\-theme\-text\fR] [\fB\-\-theme\-time\fR] [\fB\-\-theme\-container\fR] [\fB\-\-theme\-title\fR] [\fB\-\-theme\-greet\fR] [\fB\-\-theme\-prompt\fR] [\fB\-\-theme\-input\fR] [\fB\-\-theme\-action\fR] [\fB\-\-theme\-button\fR] [\fB\-\-background\fR] [\fB\-\-background\-fps\fR] [\fB\-\-doom\-height\fR] [\fB\-\-doom\-spread\fR] [\fB\-\-doom\-top\-color\fR] [\fB\-\-doom\-middle\-color\fR] [\fB\-\-doom\-bottom\-color\fR] [\fB\-\-matrix\-head\-color\fR] [\fB\-\-matrix\-bright\-color\fR] [\fB\-\-matrix\-dim\-color\fR] [\fB\-\-matrix\-min\-length\fR] [\fB\-\-matrix\-max\-length\fR] [\fB\-\-matrix\-min\-speed\fR] [\fB\-\-matrix\-max\-speed\fR] [\fB\-\-matrix\-mutate\-chance\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fB\-V\fR|\fB\-\-version\fR] 
+.SH DESCRIPTION
+Stylish graphical console greeter for greetd
+.SH OPTIONS
+.TP
+\fB\-\-system\-config\fR \fI<SYSTEM_CONFIG_PATH>\fR [default: /etc/tuigreet/config.toml]
+path to system configuration toml file
+.TP
+\fB\-\-config\fR \fI<USER_CONFIG_PATH>\fR [default: ~/.config/tuigreet/config.toml]
+path to user configuration toml file
+.TP
+\fB\-\-no\-config\fR
+disable loading toml configuration files
+.TP
+\fB\-d\fR, \fB\-\-debug\fR
+Enable debug logging
+.TP
+\fB\-l\fR, \fB\-\-log\-file\fR \fI<LOG_FILE>\fR [default: /tmp/tuigreet.log]
+Log file path
+.TP
+\fB\-m\fR, \fB\-\-mock\fR
+visual mock\-up mode: skip the greetd socket and fake the auth flow locally
+.TP
+\fB\-n\fR, \fB\-\-numlock\fR
+Enable numlock on startup
+.TP
+\fB\-c\fR, \fB\-\-cmd\fR \fI<COMMAND>\fR
+Override session with a specific command
+.TP
+\fB\-s\fR, \fB\-\-sessions\fR \fI<SESSIONS_DIRS>\fR
+Directories containing Wayland session files
+.TP
+\fB\-x\fR, \fB\-\-xsessions\fR \fI<XSESSIONS_DIRS>\fR [default: /usr/share/xsessions]
+Directories containing X11 session files
+.TP
+\fB\-\-session\-wrapper\fR \fI<SESSION_WRAPPER>\fR
+Wrapper command for non\-X11 sessions
+.TP
+\fB\-\-xsession\-wrapper\fR \fI<XSESSION_WRAPPER>\fR [default: startx]
+Wrapper command for X11 sessions (set to empty string "" for no wrapper)
+.TP
+\fB\-\-env\fR \fI<ENVIRONMENTS>\fR
+Environment variables for default session
+.TP
+\fB\-t\fR, \fB\-\-time\fR
+Show current time
+.TP
+\fB\-\-time\-format\fR \fI<TIME_FORMAT>\fR
+Custom time format (strftime)
+.TP
+\fB\-g\fR, \fB\-\-greeting\fR \fI<GREETING>\fR
+Custom greeting message
+.TP
+\fB\-\-title\fR
+Show login form title
+.TP
+\fB\-\-custom\-title\fR \fI<CUSTOM_TITLE>\fR
+Custom login form title
+.TP
+\fB\-i\fR, \fB\-\-issue\fR
+Show /etc/issue file
+.TP
+\fB\-b\fR, \fB\-\-battery\fR
+Show battery percentage
+.TP
+\fB\-\-greet\-align\fR \fI<ALIGN_GREETING>\fR [default: center]
+Greeting text alignment
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+left
+.IP \(bu 2
+center
+.IP \(bu 2
+right
+.RE
+.TP
+\fB\-u\fR, \fB\-\-user\fR \fI<DEFAULT_USER>\fR
+Default user to pre\-fill
+.TP
+\fB\-r\fR, \fB\-\-remember\fR
+Remember last logged\-in username
+.TP
+\fB\-\-remember\-session\fR
+Remember last selected session (global)
+.TP
+\fB\-\-remember\-user\-session\fR
+Remember last selected session per user
+.TP
+\fB\-\-user\-menu\fR
+Enable user selection menu
+.TP
+\fB\-\-user\-menu\-min\-uid\fR \fI<MIN_UID>\fR [default: 1000]
+Minimum UID to display in user menu
+.TP
+\fB\-\-user\-menu\-max\-uid\fR \fI<MAX_UID>\fR [default: 60000]
+Maximum UID to display in user menu
+.TP
+\fB\-\-secret\-mode\fR \fI<MODE>\fR [default: hidden]
+How to display secrets
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+hidden
+.IP \(bu 2
+characters
+.RE
+.TP
+\fB\-\-secret\-characters\fR \fI<CHARACTERS>\fR [default: *]
+Characters to use when mode is Characters
+.TP
+\fB\-w\fR, \fB\-\-width\fR \fI<WIDTH>\fR [default: 80]
+Width of the main prompt container
+.TP
+\fB\-\-window\-padding\fR \fI<WINDOW_PADDING>\fR [default: 0]
+Padding around the terminal window
+.TP
+\fB\-\-container\-padding\fR \fI<CONTAINER_PADDING>\fR [default: 2]
+Padding inside the main container
+.TP
+\fB\-\-prompt\-padding\fR \fI<PROMPT_PADDING>\fR [default: 1]
+Padding between prompt rows
+.TP
+\fB\-\-time\-position\fR \fI<TIME_POSITION>\fR [default: default]
+Position of time widget
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+default
+.IP \(bu 2
+top
+.IP \(bu 2
+bottom
+.IP \(bu 2
+hidden
+.RE
+.TP
+\fB\-\-status\-position\fR \fI<STATUS_POSITION>\fR [default: default]
+Position of status bar widget
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+default
+.IP \(bu 2
+top
+.IP \(bu 2
+bottom
+.IP \(bu 2
+hidden
+.RE
+.TP
+\fB\-\-battery\-position\fR \fI<BATTERY_POSITION>\fR [default: left]
+Position of battery widget
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+left
+.IP \(bu 2
+right
+.RE
+.TP
+\fB\-\-show\-reset\fR
+Show the ESC/Reset button
+.TP
+\fB\-\-show\-command\fR
+Show the command button
+.TP
+\fB\-\-show\-session\fR
+Show the session button
+.TP
+\fB\-\-show\-power\fR
+Show the power button
+.TP
+\fB\-\-show\-background\fR
+Show the background button
+.TP
+\fB\-\-show\-session\-status\fR
+Show the current session/command indicator
+.TP
+\fB\-\-show\-caps\-lock\fR
+Show the caps lock indicator
+.TP
+\fB\-\-power\-shutdown\fR \fI<SHUTDOWN>\fR
+Custom shutdown command
+.TP
+\fB\-\-power\-reboot\fR \fI<REBOOT>\fR
+Custom reboot command
+.TP
+\fB\-\-power\-suspend\fR \fI<SUSPEND>\fR
+Custom suspend command
+.TP
+\fB\-\-power\-hibernate\fR \fI<HIBERNATE>\fR
+Custom hibernate command
+.TP
+\fB\-\-power\-use\-setsid\fR
+Use setsid to detach power commands
+.TP
+\fB\-\-kb\-command\fR \fI<kb_command>\fR [default: 2]
+F\-key for command menu (1\-12)
+.TP
+\fB\-\-kb\-sessions\fR \fI<SESSIONS>\fR [default: 3]
+F\-key for sessions menu (1\-12)
+.TP
+\fB\-\-kb\-power\fR \fI<POWER>\fR [default: 12]
+F\-key for power menu (1\-12)
+.TP
+\fB\-\-kb\-background\fR \fI<BACKGROUND>\fR [default: 4]
+F\-key for the on\-the\-fly background switcher menu (1\-12)
+.TP
+\fB\-\-theme\-border\fR \fI<BORDER>\fR
+Border color
+.TP
+\fB\-\-theme\-text\fR \fI<TEXT>\fR
+Base text color
+.TP
+\fB\-\-theme\-time\fR \fI<TIME>\fR
+Time display color
+.TP
+\fB\-\-theme\-container\fR \fI<CONTAINER>\fR
+Container background color
+.TP
+\fB\-\-theme\-title\fR \fI<TITLE>\fR
+Container title color
+.TP
+\fB\-\-theme\-greet\fR \fI<GREET>\fR
+Greeting text color
+.TP
+\fB\-\-theme\-prompt\fR \fI<PROMPT>\fR
+Prompt text color
+.TP
+\fB\-\-theme\-input\fR \fI<INPUT>\fR
+User input color
+.TP
+\fB\-\-theme\-action\fR \fI<ACTION>\fR
+Action text color
+.TP
+\fB\-\-theme\-button\fR \fI<BUTTON>\fR
+Action button color
+.TP
+\fB\-\-background\fR \fI<KIND>\fR
+Which animation to run. `None` or `"none"` disables animations. Currently supported: `"doom"`, `"matrix"`
+.TP
+\fB\-\-background\-fps\fR \fI<FPS>\fR [default: 30]
+Render frame rate when an animation is active. Defaults to 30 FPS when `kind` is set; the base UI tick (2 FPS) otherwise
+.TP
+\fB\-\-doom\-height\fR \fI<HEIGHT>\fR [default: 6]
+Decay control (1..=9). Higher = taller flames
+.TP
+\fB\-\-doom\-spread\fR \fI<SPREAD>\fR [default: 2]
+Horizontal jitter range (0..=4)
+.TP
+\fB\-\-doom\-top\-color\fR \fI<TOP_COLOR>\fR [default: #9F2707]
+Color of the coolest flame tips. Accepts `#RRGGBB`, `0xRRGGBB`, or any color name accepted by ratatui (e.g. `red`, `magenta`)
+.TP
+\fB\-\-doom\-middle\-color\fR \fI<MIDDLE_COLOR>\fR [default: #C78F17]
+Color of the mid\-band flames
+.TP
+\fB\-\-doom\-bottom\-color\fR \fI<BOTTOM_COLOR>\fR [default: #FFFFFF]
+Color of the hottest flames at the base
+.TP
+\fB\-\-matrix\-head\-color\fR \fI<HEAD_COLOR>\fR [default: #CCFFCC]
+Color of the leading glyph in each falling stream. Accepts `#RRGGBB`, `0xRRGGBB`, or any color name accepted by ratatui
+.TP
+\fB\-\-matrix\-bright\-color\fR \fI<BRIGHT_COLOR>\fR [default: #33FF66]
+Color of the brightest part of the trail (just behind the head)
+.TP
+\fB\-\-matrix\-dim\-color\fR \fI<DIM_COLOR>\fR [default: #006622]
+Color of the dim tail before each glyph fades out
+.TP
+\fB\-\-matrix\-min\-length\fR \fI<MIN_LENGTH>\fR [default: 6]
+Inclusive minimum trail length in rows
+.TP
+\fB\-\-matrix\-max\-length\fR \fI<MAX_LENGTH>\fR [default: 18]
+Inclusive maximum trail length in rows
+.TP
+\fB\-\-matrix\-min\-speed\fR \fI<MIN_SPEED>\fR [default: 0.3]
+Inclusive minimum stream speed, in rows\-per\-frame. Lower = slower
+.TP
+\fB\-\-matrix\-max\-speed\fR \fI<MAX_SPEED>\fR [default: 1.1]
+Inclusive maximum stream speed, in rows\-per\-frame
+.TP
+\fB\-\-matrix\-mutate\-chance\fR \fI<MUTATE_CHANCE>\fR [default: 0.02]
+Per\-cell, per\-frame probability of a glyph mutating (the faint trail shimmer). `0.0` disables
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version
+.SH VERSION
+v0.11.0

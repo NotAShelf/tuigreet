@@ -32,9 +32,6 @@ jobs:
         run: |
           cargo test
           LD_PRELOAD=libnss_wrapper.so cargo test --features nsswrapper nsswrapper_
-      - name: Generate manpage
-        run: |
-          scdoc < contrib/man/tuigreet-1.scd > /dev/null
 
   build:
     strategy:

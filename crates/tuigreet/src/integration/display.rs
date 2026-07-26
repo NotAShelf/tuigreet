@@ -88,8 +88,8 @@ async fn show_time() {
   let mut runner = IntegrationRunner::new(
     opts,
     Some(|greeter| {
-      greeter.time = true;
-      greeter.time_format = Some(TIME_FORMAT.to_string());
+      greeter.display.show_time = true;
+      greeter.display.time_format = Some(TIME_FORMAT.to_string());
     }),
   )
   .await;
@@ -124,8 +124,8 @@ async fn show_custom_title_overrides_localization() {
   let mut runner = IntegrationRunner::new_with_size(
     opts,
     Some(|greeter| {
-      greeter.title.enable = true;
-      greeter.title.custom = Some("Welcome to My System".to_string());
+      greeter.display.show_title = true;
+      greeter.display.custom_title = Some("Welcome to My System".to_string());
     }),
     (30, 10),
   )

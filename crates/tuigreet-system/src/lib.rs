@@ -8,7 +8,7 @@
 use std::{fs, process};
 
 #[cfg(not(test))]
-use tuigreet_config::{OutputConfig, TerminalConfig};
+use tuigreet_config::config::{OutputConfig, TerminalConfig};
 
 /// Raw FFI bindings for the two terminal-sizing ioctls.
 ///

@@ -24,7 +24,7 @@ pub fn draw_with_area(
     f.render_widget(Clear, container);
   }
 
-  let container_padding = greeter.container_padding();
+  let container_padding = greeter.layout.container_padding;
   let frame = Rect::new(
     x.saturating_add(container_padding),
     y.saturating_add(container_padding),

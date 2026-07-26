@@ -51,7 +51,7 @@ where
     f: &mut Frame,
     area: Rect,
   ) -> Result<(u16, u16), Box<dyn Error>> {
-    let theme = &greeter.theme;
+    let theme = &greeter.themeui;
 
     let size = area;
     let (x, y, width, height) =
