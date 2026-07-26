@@ -32,7 +32,7 @@ use greetd_ipc::Request;
 use power::PowerPostAction;
 use tokio::sync::RwLock;
 use tui::{Terminal, backend::CrosstermBackend};
-use tuigreet_types::AuthStatus;
+use tuigreet_types::{AuthStatus, expand_tilde};
 
 pub use self::greeter::*;
 use self::{event::Events, ipc::Ipc};
@@ -69,7 +69,7 @@ where
 
   register_panic_handler();
 
-  if greeter.numlock {
+  if greeter.general.numlock {
     enable_numlock();
   }
 
@@ -88,7 +88,7 @@ where
 
   let ipc = Ipc::new();
 
-  if greeter.remember && !greeter.username.value.is_empty() {
+  if greeter.remember.username && !greeter.username.value.is_empty() {
     greeter.working = true;
 
     tracing::info!(
@@ -103,7 +103,7 @@ where
       .await;
   }
 
-  if greeter.user_menu
+  if greeter.user_menu.enabled
     && greeter.users.options.len() == 1
     && let Some(user) = greeter.users.options.first().cloned()
   {
@@ -120,21 +120,19 @@ where
       .await;
   }
 
+  let _system_config_path = expand_tilde(&greeter.general.system_config_path);
+  let _user_config_path = expand_tilde(&greeter.general.user_config_path);
+
   let greeter = Arc::new(RwLock::new(greeter));
+
+  #[cfg(not(test))]
+  let mut _config_watchers: Vec<crate::watcher::ConfigWatcher> = Vec::new();
 
   // Initialize config watcher for hot reloading
   #[cfg(not(test))]
   let _config_watcher = {
-    let config_path = {
-      let greeter_guard = greeter.read().await;
-      greeter_guard
-        .config()
-        .opt_str("config")
-        .map(std::path::PathBuf::from)
-    };
-
     match crate::watcher::ConfigWatcher::new(
-      config_path,
+      vec![_system_config_path, _user_config_path],
       greeter.clone(),
       events.sender(),
     ) {
@@ -283,7 +281,10 @@ fn init_logger(
     .append(true)
     .clone();
 
-  match (greeter.debug, logfile.open(&greeter.logfile)) {
+  match (
+    greeter.general.debug,
+    logfile.open(&greeter.general.log_file),
+  ) {
     (true, Ok(file)) => {
       let (appender, guard) = tracing_appender::non_blocking(file);
       let target = Targets::new().with_target("tuigreet", LevelFilter::DEBUG);

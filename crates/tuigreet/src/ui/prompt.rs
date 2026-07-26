@@ -35,13 +35,13 @@ pub fn draw_with_area(
   f: &mut Frame,
   area: Rect,
 ) -> Result<(u16, u16), Box<dyn Error>> {
-  let theme = &greeter.theme;
+  let theme = &greeter.themeui;
 
   let size = area;
   let (x, y, width, height) = get_rect_bounds(greeter, size, 0);
 
-  let container_padding = greeter.container_padding();
-  let prompt_padding = greeter.prompt_padding();
+  let container_padding = greeter.layout.container_padding;
+  let prompt_padding = greeter.layout.prompt_padding;
   let greeting_alignment = match greeter.greet_align() {
     GreetAlign::Center => Alignment::Center,
     GreetAlign::Left => Alignment::Left,
@@ -70,8 +70,8 @@ pub fn draw_with_area(
     .border_type(BorderType::Plain)
     .border_style(theme.of(&[Themed::Border]));
 
-  if greeter.title.enable {
-    let title_text = if let Some(ref custom) = greeter.title.custom {
+  if greeter.display.show_title {
+    let title_text = if let Some(ref custom) = greeter.display.custom_title {
       custom.clone()
     } else {
       fl!("title_authenticate", hostname = get_hostname())
@@ -114,16 +114,16 @@ pub fn draw_with_area(
     f.render_widget(greeting_label, chunks[GREETING_INDEX]);
   }
 
-  let username_label = if greeter.user_menu && greeter.username.value.is_empty()
-  {
-    let prompt_text = Span::from(fl!("select_user"));
+  let username_label =
+    if greeter.user_menu.enabled && greeter.username.value.is_empty() {
+      let prompt_text = Span::from(fl!("select_user"));
 
-    Paragraph::new(prompt_text).alignment(Alignment::Center)
-  } else {
-    let username_text = prompt_value(theme, Some(fl!("username")));
+      Paragraph::new(prompt_text).alignment(Alignment::Center)
+    } else {
+      let username_text = prompt_value(theme, Some(fl!("username")));
 
-    Paragraph::new(username_text)
-  };
+      Paragraph::new(username_text)
+    };
 
   let username = greeter.username.get();
   let username_value_text = Span::from(username);
@@ -134,7 +134,7 @@ pub fn draw_with_area(
     Mode::Username | Mode::Password | Mode::Action => {
       f.render_widget(username_label, chunks[USERNAME_INDEX]);
 
-      if !greeter.user_menu || !greeter.username.value.is_empty() {
+      if !greeter.user_menu.enabled || !greeter.username.value.is_empty() {
         f.render_widget(
           username_value,
           Rect::new(
@@ -205,7 +205,7 @@ pub fn draw_with_area(
       if let Some(message) = message {
         let message = message
           .alignment(Alignment::Center)
-          .style(greeter.theme.of(&[Themed::Text]));
+          .style(theme.of(&[Themed::Text]));
 
         f.render_widget(
           message,

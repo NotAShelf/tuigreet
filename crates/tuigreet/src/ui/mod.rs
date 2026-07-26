@@ -31,7 +31,7 @@ use tui::{
   text::{Line, Span},
   widgets::Paragraph,
 };
-use tuigreet_config::{BatteryPosition, WidgetPosition};
+use tuigreet_config::config::{BatteryPosition, WidgetPosition};
 use tuigreet_types::Mode;
 use util::buttonize;
 
@@ -59,14 +59,10 @@ enum Button {
 
 /// Get widget position from config
 fn get_widget_position(greeter: &Greeter, widget_name: &str) -> WidgetPosition {
-  if let Some(ref config) = greeter.loaded_config {
-    match widget_name {
-      "time" => config.layout.widgets.time_position.clone(),
-      "status" => config.layout.widgets.status_position.clone(),
-      _ => WidgetPosition::Default,
-    }
-  } else {
-    WidgetPosition::Default
+  match widget_name {
+    "time" => greeter.layout.widgets.time_position.clone(),
+    "status" => greeter.layout.widgets.status_position.clone(),
+    _ => WidgetPosition::Default,
   }
 }
 
@@ -89,18 +85,18 @@ where
       anim.render(area, f.buffer_mut());
     }
 
-    let theme = &greeter.theme;
+    let theme = &greeter.themeui;
     let size = area;
     let time_position = get_widget_position(&greeter, "time");
     let status_position = get_widget_position(&greeter, "status");
 
-    let time_at_top = greeter.time
+    let time_at_top = greeter.display.show_time
       && !matches!(
         time_position,
         WidgetPosition::Hidden | WidgetPosition::Bottom
       );
-    let time_at_bottom =
-      greeter.time && matches!(time_position, WidgetPosition::Bottom);
+    let time_at_bottom = greeter.display.show_time
+      && matches!(time_position, WidgetPosition::Bottom);
 
     // Dynamic layout
     let mut constraints = vec![];
@@ -109,10 +105,10 @@ where
     let mut status_slot = None;
 
     // Top padding
-    constraints.push(Constraint::Length(greeter.window_padding()));
+    constraints.push(Constraint::Length(greeter.layout.window_padding));
 
     // Top info row: time centered, battery overlaid on left or right.
-    if greeter.battery || time_at_top {
+    if greeter.display.battery || time_at_top {
       info_top_slot = Some(constraints.len());
       constraints.push(Constraint::Length(1));
     }
@@ -143,7 +139,7 @@ where
     }
 
     // Bottom padding
-    constraints.push(Constraint::Length(greeter.window_padding()));
+    constraints.push(Constraint::Length(greeter.layout.window_padding));
 
     let chunks = Layout::default().constraints(constraints).split(size);
 
@@ -153,9 +149,9 @@ where
         .direction(Direction::Horizontal)
         .constraints(
           [
-            Constraint::Length(greeter.window_padding()),
+            Constraint::Length(greeter.layout.window_padding),
             Constraint::Fill(1),
-            Constraint::Length(greeter.window_padding()),
+            Constraint::Length(greeter.layout.window_padding),
           ]
           .as_ref(),
         )
@@ -183,7 +179,7 @@ where
         );
       }
 
-      if greeter.battery
+      if greeter.display.battery
         && let Some(info) = get_battery_info()
       {
         let battery_text = if info.charging {
@@ -192,11 +188,7 @@ where
           format!("{}%", info.percentage)
         };
 
-        let battery_pos = greeter
-          .loaded_config
-          .as_ref()
-          .map(|c| c.layout.widgets.battery_position.clone())
-          .unwrap_or_default();
+        let battery_pos = greeter.layout.widgets.battery_position.clone();
 
         let (bat_slot, cons) = match battery_pos {
           BatteryPosition::Left => {
@@ -234,11 +226,11 @@ where
         .direction(Direction::Horizontal)
         .constraints(
           [
-            Constraint::Length(greeter.window_padding()),
+            Constraint::Length(greeter.layout.window_padding),
             Constraint::Fill(1),
             Constraint::Length(time_text.chars().count() as u16),
             Constraint::Fill(1),
-            Constraint::Length(greeter.window_padding()),
+            Constraint::Length(greeter.layout.window_padding),
           ]
           .as_ref(),
         )
@@ -258,11 +250,11 @@ where
         .direction(Direction::Horizontal)
         .constraints(
           [
-            Constraint::Length(greeter.window_padding()),
+            Constraint::Length(greeter.layout.window_padding),
             Constraint::Min(1),
             Constraint::Length(1),
             Constraint::Length(status_block_size_right),
-            Constraint::Length(greeter.window_padding()),
+            Constraint::Length(greeter.layout.window_padding),
           ]
           .as_ref(),
         )
@@ -278,7 +270,7 @@ where
 
       let mut status_spans: Vec<Span> = vec![];
 
-      if greeter.status_show_reset {
+      if greeter.layout.widgets.status_bar.show_reset {
         status_spans.push(status_label(theme, "ESC"));
         status_spans.push(status_value(
           &greeter,
@@ -288,9 +280,11 @@ where
         ));
         status_spans.push(Span::from(" "));
       }
-      if greeter.status_show_command {
-        status_spans
-          .push(status_label(theme, format!("F{}", greeter.kb_command)));
+      if greeter.layout.widgets.status_bar.show_command {
+        status_spans.push(status_label(
+          theme,
+          format!("F{}", greeter.keybindings.command),
+        ));
         status_spans.push(status_value(
           &greeter,
           theme,
@@ -299,9 +293,11 @@ where
         ));
         status_spans.push(Span::from(" "));
       }
-      if greeter.status_show_session {
-        status_spans
-          .push(status_label(theme, format!("F{}", greeter.kb_sessions)));
+      if greeter.layout.widgets.status_bar.show_session {
+        status_spans.push(status_label(
+          theme,
+          format!("F{}", greeter.keybindings.sessions),
+        ));
         status_spans.push(status_value(
           &greeter,
           theme,
@@ -310,9 +306,11 @@ where
         ));
         status_spans.push(Span::from(" "));
       }
-      if greeter.status_show_power {
-        status_spans
-          .push(status_label(theme, format!("F{}", greeter.kb_power)));
+      if greeter.layout.widgets.status_bar.show_power {
+        status_spans.push(status_label(
+          theme,
+          format!("F{}", greeter.keybindings.power),
+        ));
         status_spans.push(status_value(
           &greeter,
           theme,
@@ -321,9 +319,11 @@ where
         ));
         status_spans.push(Span::from(" "));
       }
-      if greeter.status_show_background {
-        status_spans
-          .push(status_label(theme, format!("F{}", greeter.kb_background)));
+      if greeter.layout.widgets.status_bar.show_background {
+        status_spans.push(status_label(
+          theme,
+          format!("F{}", greeter.keybindings.background),
+        ));
         status_spans.push(status_value(
           &greeter,
           theme,
@@ -332,7 +332,7 @@ where
         ));
         status_spans.push(Span::from(" "));
       }
-      if greeter.status_show_session_status {
+      if greeter.layout.widgets.status_bar.show_session_status {
         status_spans.push(status_label(theme, session_source_label));
         status_spans.push(status_value(
           &greeter,
@@ -347,7 +347,7 @@ where
 
       f.render_widget(status_left, status_chunks[STATUSBAR_LEFT_INDEX]);
 
-      if greeter.status_show_caps_lock && capslock_status() {
+      if greeter.layout.widgets.status_bar.show_caps_lock && capslock_status() {
         let status_right_text = status_label(theme, fl!("status_caps"));
         let status_right = Paragraph::new(status_right_text);
 
@@ -390,7 +390,7 @@ where
 }
 
 fn get_time(greeter: &Greeter) -> String {
-  let format = match &greeter.time_format {
+  let format = match &greeter.display.time_format {
     Some(format) => Cow::Borrowed(format),
     None => Cow::Owned(fl!("date")),
   };
