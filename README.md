@@ -2,10 +2,20 @@
 
 [greetd]: https://git.sr.ht/~kennylevinsen/greetd
 [tuigreet]: https://github.com/apognu/tuigreet
+[the original author or tuigreet]: https://github.com/apognu
+[merged back into tuigreet]: https://github.com/tuigreet/tuigreet/pull/211
 
 Stylish, modern and extensible greeter for [greetd], built on top of the
 original [tuigreet] foundation with a focus on improved maintainability, a
 cleaner codebase, and a more polished user experience.
+
+> [!IMPORTANT]
+> As of 12.08.2025, following a discussion with
+> [the original author or tuigreet] this fork has been **consolidated back into
+> the original repo**. This fork has now been archived, and all changes have
+> been [merged back into tuigreet]. Please ask your distro packagers to update
+> the repository location and update to the new release if you are interested in
+> the changes spearheaded by this fork.
 
 ## Features
 
