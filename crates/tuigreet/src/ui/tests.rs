@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use figment::Jail;
 use tokio::sync::RwLock;
 use tui::{
   Terminal,
@@ -7,7 +8,10 @@ use tui::{
   layout::{Constraint, Direction, Layout, Rect},
   style::Color,
 };
-use tuigreet_config::{Config, WidgetPosition};
+use tuigreet_config::{
+  config::{Config, WidgetPosition},
+  loader::load_config_from,
+};
 use tuigreet_types::Mode;
 
 use crate::{Greeter, integration::common::backend::TestBackend, ui};
@@ -17,7 +21,7 @@ fn test_greeter() -> Arc<RwLock<Greeter>> {
   let mut greeter = Greeter::default();
   greeter.working = false;
   // Initialize config to avoid unwrap panics
-  greeter.config = Greeter::options().parse(&[""]).ok();
+  greeter.config = Config::defaults();
   Arc::new(RwLock::new(greeter))
 }
 
@@ -94,12 +98,11 @@ async fn test_status_bar_top_position() {
   {
     let mut g = greeter.write().await;
     g.mode = Mode::Username;
-    let mut config = Config::default();
+    let mut config = Config::defaults();
     config.layout.widgets.status_position = WidgetPosition::Top;
 
     // NOTE: loaded_config is what the UI actually reads
-    g.loaded_config = Some(config.clone());
-    g.apply_config(&config);
+    g.apply_config(config);
   }
 
   let buffer = render_ui(greeter, 80, 24).await;
@@ -135,10 +138,10 @@ async fn test_status_bar_hidden() {
   {
     let mut g = greeter.write().await;
     g.mode = Mode::Username;
-    let mut config = Config::default();
+    let mut config = Config::defaults();
     config.layout.widgets.status_position = WidgetPosition::Hidden;
-    g.loaded_config = Some(config.clone());
-    g.apply_config(&config);
+    g.config = config.clone();
+    g.apply_config(config);
   }
 
   let buffer = render_ui(greeter, 80, 24).await;
@@ -161,7 +164,7 @@ async fn test_time_widget_top_default() {
   let greeter = test_greeter();
   {
     let mut g = greeter.write().await;
-    g.time = true;
+    g.display.show_time = true;
     g.mode = Mode::Username;
   }
 
@@ -188,12 +191,12 @@ async fn test_time_widget_bottom_position() {
   let greeter = test_greeter();
   {
     let mut g = greeter.write().await;
-    g.time = true;
+    g.display.show_time = true;
     g.mode = Mode::Username;
-    let mut config = Config::default();
+    let mut config = Config::defaults();
     config.layout.widgets.time_position = WidgetPosition::Bottom;
-    g.loaded_config = Some(config.clone());
-    g.apply_config(&config);
+    g.config = config.clone();
+    g.apply_config(config);
   }
 
   let buffer = render_ui(greeter, 80, 24).await;
@@ -326,10 +329,10 @@ async fn test_window_padding() {
   {
     let mut g = greeter.write().await;
     g.mode = Mode::Username;
-    let mut config = Config::default();
-    config.layout.window_padding = Some(2);
-    g.loaded_config = Some(config.clone());
-    g.apply_config(&config);
+    let mut config = Config::defaults();
+    config.layout.window_padding = 2;
+    g.config = config.clone();
+    g.apply_config(config);
   }
 
   let buffer = render_ui(greeter, 80, 24).await;
@@ -399,12 +402,12 @@ async fn test_combined_time_and_status_positions() {
       {
         let mut g = greeter.write().await;
         g.mode = Mode::Username;
-        g.time = true;
-        let mut config = Config::default();
+        g.display.show_time = true;
+        let mut config = Config::defaults();
         config.layout.widgets.time_position = time_pos.clone();
         config.layout.widgets.status_position = status_pos.clone();
-        g.loaded_config = Some(config.clone());
-        g.apply_config(&config);
+        g.config = config.clone();
+        g.apply_config(config);
       }
 
       let buffer = render_ui(greeter, 80, 24).await;
@@ -423,12 +426,11 @@ async fn test_theme_border_color_applied() {
     let mut g = greeter.write().await;
     g.mode = Mode::Username;
 
-    let mut config = Config::default();
+    let mut config = Config::defaults();
     config.theme.border = Some("red".to_string());
 
-    g.loaded_config = Some(config.clone());
-    g.apply_config(&config);
-    g.apply_theme_config(&config.theme, None);
+    g.config = config.clone();
+    g.apply_config(config);
   }
 
   let buffer = render_ui(greeter, 80, 24).await;
@@ -469,12 +471,11 @@ async fn test_theme_prompt_color_applied() {
     let mut g = greeter.write().await;
     g.mode = Mode::Username;
 
-    let mut config = Config::default();
+    let mut config = Config::defaults();
     config.theme.prompt = Some("yellow".to_string());
 
-    g.loaded_config = Some(config.clone());
-    g.apply_config(&config);
-    g.apply_theme_config(&config.theme, None);
+    g.config = config.clone();
+    g.apply_config(config);
   }
 
   let buffer = render_ui(greeter, 80, 24).await;
@@ -507,12 +508,11 @@ async fn test_theme_container_background_applied() {
     let mut g = greeter.write().await;
     g.mode = Mode::Username;
 
-    let mut config = Config::default();
+    let mut config = Config::defaults();
     config.theme.container = Some("blue".to_string());
 
-    g.loaded_config = Some(config.clone());
-    g.apply_config(&config);
-    g.apply_theme_config(&config.theme, None);
+    g.config = config.clone();
+    g.apply_config(config);
   }
 
   let buffer = render_ui(greeter, 80, 24).await;
@@ -545,13 +545,12 @@ async fn test_theme_greeting_color_applied() {
     let mut g = greeter.write().await;
     g.mode = Mode::Username;
 
-    let mut config = Config::default();
+    let mut config = Config::defaults();
     config.display.greeting = Some("Welcome to the system!".to_string());
     config.theme.greet = Some("green".to_string());
 
-    g.loaded_config = Some(config.clone());
-    g.apply_config(&config);
-    g.apply_theme_config(&config.theme, None);
+    g.config = config.clone();
+    g.apply_config(config);
   }
 
   let buffer = render_ui(greeter, 80, 24).await;
@@ -587,12 +586,11 @@ async fn test_theme_hex_colors_applied() {
     let mut g = greeter.write().await;
     g.mode = Mode::Username;
 
-    let mut config = Config::default();
+    let mut config = Config::defaults();
     config.theme.border = Some("#ff0000".to_string()); // Red in hex
 
-    g.loaded_config = Some(config.clone());
-    g.apply_config(&config);
-    g.apply_theme_config(&config.theme, None);
+    g.config = config.clone();
+    g.apply_config(config);
   }
 
   let buffer = render_ui(greeter, 80, 24).await;
@@ -633,15 +631,14 @@ async fn test_theme_multiple_colors_applied() {
     let mut g = greeter.write().await;
     g.mode = Mode::Username;
 
-    let mut config = Config::default();
+    let mut config = Config::defaults();
     config.display.greeting = Some("Test".to_string());
     config.theme.border = Some("red".to_string());
     config.theme.text = Some("cyan".to_string());
     config.theme.greet = Some("green".to_string());
 
-    g.loaded_config = Some(config.clone());
-    g.apply_config(&config);
-    g.apply_theme_config(&config.theme, None);
+    g.config = config.clone();
+    g.apply_config(config);
   }
 
   let buffer = render_ui(greeter, 80, 24).await;
@@ -672,6 +669,27 @@ async fn test_theme_multiple_colors_applied() {
   );
 }
 
+#[test]
+fn test_cli_theme_overrides_config_theme_jail() {
+  Jail::expect_with(|jail| {
+    jail.create_file(
+      "config.toml",
+      r#"
+            [theme]
+            theme_border_color = red
+            "#,
+    )?;
+
+    let (config, warnings) =
+      load_config_from(["tuigreet", "--theme-border", "blue"]).unwrap();
+
+    assert_eq!(config.theme.border.unwrap(), "blue");
+    assert!(warnings.is_empty(), "Expected no warnings");
+
+    Ok(())
+  });
+}
+
 #[tokio::test]
 async fn test_cli_theme_overrides_config_theme() {
   let greeter = test_greeter();
@@ -679,13 +697,12 @@ async fn test_cli_theme_overrides_config_theme() {
     let mut g = greeter.write().await;
     g.mode = Mode::Username;
 
-    let mut config = Config::default();
-    config.theme.border = Some("red".to_string());
+    let (config, warnings) =
+      load_config_from(["tuigreet", "--theme-border", "blue"]).unwrap();
 
+    assert!(warnings.is_empty(), "Warnings should be empty");
     // CLI theme overrides with blue
-    g.loaded_config = Some(config.clone());
-    g.apply_config(&config);
-    g.apply_theme_config(&config.theme, Some("border=blue"));
+    g.apply_config(config);
   }
 
   let buffer = render_ui(greeter, 80, 24).await;
@@ -731,15 +748,14 @@ async fn test_theme_with_time_widget() {
   {
     let mut g = greeter.write().await;
     g.mode = Mode::Username;
-    g.time = true;
+    g.display.show_time = true;
 
-    let mut config = Config::default();
+    let mut config = Config::defaults();
     config.display.show_time = true;
     config.theme.time = Some("lightred".to_string());
 
-    g.loaded_config = Some(config.clone());
-    g.apply_config(&config);
-    g.apply_theme_config(&config.theme, None);
+    g.config = config.clone();
+    g.apply_config(config);
   }
 
   let buffer = render_ui(greeter, 80, 24).await;

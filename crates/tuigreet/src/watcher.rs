@@ -1,8 +1,4 @@
-use std::{
-  path::{Path, PathBuf},
-  sync::Arc,
-  time::Duration,
-};
+use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use notify::{
   Config as NotifyConfig,
@@ -14,7 +10,7 @@ use notify::{
 };
 use tokio::sync::{RwLock, mpsc};
 use tracing::{debug, error, info, warn};
-use tuigreet_config::{Config, parser::load_config};
+use tuigreet_config::{config::Config, loader::load_config};
 
 use crate::{Greeter, event::Event as GreeterEvent};
 
@@ -44,7 +40,7 @@ impl ConfigWatcher {
   /// # Errors
   /// Returns error if file watcher cannot be initialized
   pub fn new(
-    config_path: Option<PathBuf>,
+    config_paths: Vec<PathBuf>,
     greeter: Arc<RwLock<Greeter>>,
     event_sender: mpsc::Sender<GreeterEvent>,
   ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
@@ -61,59 +57,43 @@ impl ConfigWatcher {
     )?;
 
     // Determine which config file to watch
-    let watch_path = if let Some(ref path) = config_path {
-      path.clone()
-    } else {
-      // Use XDG config path
-      if let Some(config_dir) = dirs::config_dir() {
-        let user_config = config_dir.join("tuigreet").join("config.toml");
-        if user_config.exists() {
-          user_config
-        } else {
-          // Fall back to system config
-          PathBuf::from("/etc/tuigreet/config.toml")
-        }
-      } else {
-        PathBuf::from("/etc/tuigreet/config.toml")
+    let mut watched_paths = Vec::new();
+
+    // watch all provided config paths that exist
+    for path in config_paths {
+      let Some(parent) = path.parent() else {
+        continue;
+      };
+
+      // watch the parent directory (notify works on dirs, not files)
+      let watch_root = parent.ancestors().find(|p| p.exists());
+
+      if let Some(root) = watch_root {
+        watcher.watch(root, RecursiveMode::NonRecursive)?;
+        watched_paths.push(path.clone());
+        info!("Watching config: {}", path.display());
       }
-    };
+    }
 
     // Only watch if the config file exists
-    if watch_path.exists() {
-      info!("Starting config file watcher for: {}", watch_path.display());
-
-      // Watch the parent directory to catch file recreations
-      if let Some(parent) = watch_path.parent() {
-        watcher.watch(parent, RecursiveMode::NonRecursive)?;
-      }
-    } else {
-      info!(
-        "Config file does not exist, hot reloading disabled: {}",
-        watch_path.display()
-      );
+    if watched_paths.is_empty() {
+      info!("No config files exist, hot reloading disabled");
     }
 
     // Spawn background task to handle file events
+    let watched_paths_clone = watched_paths.clone();
     tokio::spawn(async move {
       while let Some(result) = rx.recv().await {
         match result {
           Ok(event) => {
-            // Check if this is a modification to our config file
-            if Self::is_config_event(&event, &watch_path) {
+            // Check if this is a modification to any of our config files
+            if Self::is_config_event(&event, &watched_paths_clone) {
               debug!("Config file change detected: {:?}", event);
 
               // Add a small delay to avoid partial writes
               tokio::time::sleep(Duration::from_millis(100)).await;
 
-              let new_config = {
-                let greeter_guard = greeter.read().await;
-                Self::reload_config(
-                  config_path.as_deref(),
-                  greeter_guard.config.as_ref(),
-                )
-              };
-
-              match new_config {
+              match Self::reload_config() {
                 Ok(new_config) => {
                   if let Err(e) =
                     Self::apply_config_to_greeter(&greeter, new_config).await
@@ -145,37 +125,53 @@ impl ConfigWatcher {
     Ok(Self { watcher })
   }
 
-  fn is_config_event(event: &Event, config_path: &Path) -> bool {
+  fn is_config_event(event: &Event, config_paths: &[PathBuf]) -> bool {
     match event.kind {
       EventKind::Modify(_) | EventKind::Create(_) => {
-        event.paths.iter().any(|path| path == config_path)
+        event.paths.iter().any(|path| config_paths.contains(path))
       },
       _ => false,
     }
   }
 
-  fn reload_config(
-    cli_config_path: Option<&Path>,
-    cli_matches: Option<&getopts::Matches>,
-  ) -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
+  fn reload_config() -> Result<Config, Box<dyn std::error::Error + Send + Sync>>
+  {
     debug!("Reloading configuration");
 
-    let config = load_config(cli_config_path, cli_matches)?;
+    match load_config() {
+      Ok((config, warnings)) => {
+        for warning in &warnings {
+          tracing::warn!("{}", warning);
+        }
+        Ok(config)
+      },
+      Err((config, (errors, warnings))) => {
+        // Log all errors and warnings from the failed load
+        for error in &errors {
+          tracing::error!("{}", error);
+        }
+        for warning in &warnings {
+          tracing::warn!("{}", warning);
+        }
 
-    match config.validate(false) {
-      Ok(warnings) => {
-        for warning in warnings {
-          warn!("Config warning after reload: {}", warning);
+        // Decide: do you want to:
+        // A) Still return the partial config?
+        // B) Fail and return an error?
+
+        if errors.is_empty() {
+          // Only warnings, so it's effectively OK
+          Ok(config)
+        } else {
+          // Return a meaningful error with collected errors
+          let err_msg = errors
+            .iter()
+            .map(|e| e.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+          Err(err_msg.into())
         }
       },
-      Err(e) => {
-        return Err(
-          format!("Config validation failed after reload: {e}").into(),
-        );
-      },
     }
-
-    Ok(config)
   }
 
   async fn apply_config_to_greeter(
@@ -186,26 +182,22 @@ impl ConfigWatcher {
 
     // A tracing subscriber is installed once at startup and cannot be safely
     // replaced here. Keep its settings stable until the next restart.
-    let logger_settings = (greeter_guard.debug, greeter_guard.logfile.clone());
-    if greeter_guard.loaded_config.as_ref().is_some_and(|old| {
-      old.general.debug != config.general.debug
-        || old.general.log_file != config.general.log_file
-    }) {
+    let logger_settings = (
+      greeter_guard.general.debug,
+      greeter_guard.general.log_file.clone(),
+    );
+    if greeter_guard.general.debug != config.general.debug
+      || greeter_guard.general.log_file != config.general.log_file
+    {
       warn!("general.debug and general.log_file changes require a restart");
     }
 
     // Applying an already validated configuration replaces all
     // configuration-owned runtime state while holding this write lock.
-    greeter_guard.apply_config(&config);
-    (greeter_guard.debug, greeter_guard.logfile) = logger_settings;
+    greeter_guard.apply_config(config);
+    (greeter_guard.general.debug, greeter_guard.general.log_file) =
+      logger_settings;
     greeter_guard.reload_sessions();
-
-    // Apply theme configuration
-    let cli_theme = greeter_guard.config().opt_str("theme");
-    greeter_guard.apply_theme_config(&config.theme, cli_theme.as_deref());
-
-    // Store the new config
-    greeter_guard.loaded_config = Some(config);
 
     info!("Config hot reload completed successfully");
     Ok(())

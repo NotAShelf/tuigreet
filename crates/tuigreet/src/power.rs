@@ -17,7 +17,7 @@ pub enum PowerOption {
 
 /// Execute a power command (shutdown or reboot).
 pub async fn power(greeter: &mut Greeter, option: PowerOption) {
-  if greeter.mock {
+  if greeter.general.mock {
     if let Some(ref sender) = greeter.events {
       let _ = sender
         .send(Event::Exit(tuigreet_types::AuthStatus::Cancel))
@@ -38,7 +38,7 @@ pub async fn power(greeter: &mut Greeter, option: PowerOption) {
       command: Some(args),
       ..
     }) => {
-      let command = if greeter.power_setsid {
+      let command = if greeter.power.use_setsid {
         let mut command = Command::new("setsid");
         command.args(args.split(' '));
         command

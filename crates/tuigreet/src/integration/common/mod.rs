@@ -81,11 +81,6 @@ impl IntegrationRunner {
         builder(&mut greeter);
       }
 
-      if greeter.config.is_none() {
-        greeter.config = Greeter::options().parse(&[""]).ok();
-      }
-
-      greeter.logfile = "/tmp/tuigreet.log".to_string();
       greeter.socket = socket.to_str().unwrap().to_string();
       greeter.events = Some(events.sender());
       greeter.connect().await;

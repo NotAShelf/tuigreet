@@ -43,9 +43,9 @@ async fn menus_labels_with_custom_bindings() {
   let mut runner = IntegrationRunner::new(
     opts,
     Some(|greeter| {
-      greeter.kb_command = 11;
-      greeter.kb_sessions = 1;
-      greeter.kb_power = 6;
+      greeter.keybindings.command = 11;
+      greeter.keybindings.sessions = 1;
+      greeter.keybindings.power = 6;
     }),
   )
   .await;
@@ -226,7 +226,7 @@ async fn users_menu() {
   let mut runner = IntegrationRunner::new(
     opts,
     Some(|greeter| {
-      greeter.user_menu = true;
+      greeter.user_menu.enabled = true;
       greeter.users = Menu::<User> {
         title:    "The users".to_string(),
         options:  vec![

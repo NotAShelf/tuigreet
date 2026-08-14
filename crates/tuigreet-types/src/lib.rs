@@ -1,8 +1,13 @@
 use std::{
   error::Error,
   fmt::{self, Display},
+  path::PathBuf,
 };
 
+/// Default system toml path
+pub const DEFAULT_SYSTEM_TOML_PATH: &str = "/etc/tuigreet/config.toml";
+/// Default user toml path
+pub const DEFAULT_USER_TOML_PATH: &str = "~/.config/tuigreet/config.toml";
 /// Default log file path
 pub const DEFAULT_LOG_FILE: &str = "/tmp/tuigreet.log";
 /// Default asterisk character for password masking
@@ -93,4 +98,17 @@ pub enum GreetAlign {
   Left,
   /// Right alignment
   Right,
+}
+
+/// to create absolute path from string containing ~ to represent home
+pub fn expand_tilde(path: &str) -> PathBuf {
+  match path.strip_prefix("~/") {
+    Some(rest) => {
+      match std::env::var_os("HOME") {
+        Some(home) => PathBuf::from(home).join(rest),
+        None => PathBuf::from(path),
+      }
+    },
+    None => PathBuf::from(path),
+  }
 }

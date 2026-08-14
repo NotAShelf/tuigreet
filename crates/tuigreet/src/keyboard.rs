@@ -116,7 +116,7 @@ pub async fn handle(
     KeyEvent {
       code: KeyCode::F(i),
       ..
-    } if i == greeter.kb_command => {
+    } if i == greeter.keybindings.command => {
       greeter.previous_mode = match greeter.mode {
         Mode::Users
         | Mode::Command
@@ -143,7 +143,9 @@ pub async fn handle(
     KeyEvent {
       code: KeyCode::F(i),
       ..
-    } if i == greeter.kb_sessions && !greeter.sessions.options.is_empty() => {
+    } if i == greeter.keybindings.sessions
+      && !greeter.sessions.options.is_empty() =>
+    {
       greeter.previous_mode = match greeter.mode {
         Mode::Users
         | Mode::Command
@@ -162,7 +164,9 @@ pub async fn handle(
     KeyEvent {
       code: KeyCode::F(i),
       ..
-    } if i == greeter.kb_power && !greeter.powers.options.is_empty() => {
+    } if i == greeter.keybindings.power
+      && !greeter.powers.options.is_empty() =>
+    {
       greeter.previous_mode = match greeter.mode {
         Mode::Users
         | Mode::Command
@@ -179,7 +183,7 @@ pub async fn handle(
     KeyEvent {
       code: KeyCode::F(i),
       ..
-    } if i == greeter.kb_background => {
+    } if i == greeter.keybindings.background => {
       greeter.previous_mode = match greeter.mode {
         Mode::Users
         | Mode::Command
@@ -290,7 +294,7 @@ pub async fn handle(
         },
 
         Mode::Username
-          if greeter.user_menu && !greeter.users.options.is_empty() =>
+          if greeter.user_menu.enabled && !greeter.users.options.is_empty() =>
         {
           greeter.previous_mode = match greeter.mode {
             Mode::Users | Mode::Command | Mode::Sessions | Mode::Power => {
@@ -323,7 +327,7 @@ pub async fn handle(
           greeter.session_source =
             SessionSource::Command(greeter.buffer.clone());
 
-          if greeter.remember_session {
+          if greeter.remember.session {
             write_last_command(&greeter.buffer);
             delete_last_session();
           }
@@ -353,7 +357,7 @@ pub async fn handle(
             .cloned();
 
           if let Some(Session { path, .. }) = session {
-            if greeter.remember_session
+            if greeter.remember.session
               && let Some(ref path) = path
             {
               write_last_session_path(path);
@@ -492,7 +496,7 @@ async fn validate_username(greeter: &mut Greeter, ipc: &Ipc) {
     .await;
   greeter.buffer = String::new();
 
-  if greeter.remember_user_session {
+  if greeter.remember.user_session {
     if let Ok(last_session) = get_last_user_session(&greeter.username.value)
       && let Some(last_session) =
         Session::from_path(greeter, last_session).cloned()
@@ -828,9 +832,9 @@ mod test {
     ] {
       {
         let mut greeter = greeter.write().await;
-        greeter.kb_command = 3;
-        greeter.kb_sessions = 1;
-        greeter.kb_power = 11;
+        greeter.keybindings.command = 3;
+        greeter.keybindings.sessions = 1;
+        greeter.keybindings.power = 11;
         greeter.mode = Mode::Username;
         greeter.buffer = "apognu".to_string();
       }

@@ -36,12 +36,10 @@ in
 
       nativeBuildInputs = [
         installShellFiles
-        scdoc
       ];
 
       postInstall = ''
-        scdoc < ${../contrib}/man/tuigreet-1.scd > tuigreet.1
-        installManPage tuigreet.1
+        installManPage ${../contrib}/man/tuigreet.1
       '';
 
       meta = {

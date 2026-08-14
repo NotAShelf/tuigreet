@@ -171,12 +171,12 @@ impl Ipc {
         if greeter.done {
           tracing::info!("greetd acknowledged session start, exiting");
 
-          if greeter.remember {
+          if greeter.remember.username {
             tracing::info!("caching last successful username");
 
             write_last_username(&greeter.username);
 
-            if greeter.remember_user_session {
+            if greeter.remember.user_session {
               match greeter.session_source {
                 SessionSource::Command(ref command) => {
                   tracing::info!("caching last user command: {command}");
@@ -374,10 +374,17 @@ fn wrap_session_command<'a>(
       }
 
       if *session_type == SessionType::X11 {
-        if let Some(ref wrap) = greeter.xsession_wrapper {
-          return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
+        if !greeter.session.xsession_wrapper.is_empty() {
+          return (
+            Cow::Owned(format!(
+              "{} {}",
+              greeter.session.xsession_wrapper,
+              default.command()
+            )),
+            env,
+          );
         }
-      } else if let Some(ref wrap) = greeter.session_wrapper {
+      } else if let Some(ref wrap) = greeter.session.session_wrapper {
         return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
       }
     },
@@ -385,7 +392,7 @@ fn wrap_session_command<'a>(
     _ => {
       // If a wrapper script is used, assume that it is able to set up the
       // required environment.
-      if let Some(ref wrap) = greeter.session_wrapper {
+      if let Some(ref wrap) = greeter.session.session_wrapper {
         return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
       }
       // Otherwise, set up the environment from the provided argument.
@@ -432,7 +439,7 @@ mod test {
   #[test]
   fn wayland_wrapper() {
     let mut greeter = Greeter::default();
-    greeter.session_wrapper = Some("/wrapper.sh".into());
+    greeter.session.session_wrapper = Some("/wrapper.sh".into());
 
     let session = Session {
       name: "Session1".into(),
@@ -453,7 +460,7 @@ mod test {
   #[test]
   fn x11_wrapper() {
     let mut greeter = Greeter::default();
-    greeter.xsession_wrapper = Some("startx".into());
+    greeter.session.xsession_wrapper = "startx".to_string();
 
     let session = Session {
       slug:              Some("thede".to_string()),

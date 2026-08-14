@@ -7,10 +7,14 @@ license.workspace      = true
 rust-version.workspace = true
 
 [dependencies]
-chrono             = { workspace = true }
-codespan-reporting = { workspace = true }
-dirs               = { workspace = true }
-getopts            = { workspace = true }
-serde              = { workspace = true }
-toml               = { workspace = true }
-tracing            = { workspace = true }
+tuigreet-types      = { workspace = true }
+
+chrono              = { workspace = true }
+clap                = { workspace = true }
+codespan-reporting  = { workspace = true }
+dirs                = { workspace = true }
+figment             = { workspace = true }
+getopts             = { workspace = true }
+serde               = { workspace = true }
+toml                = { workspace = true }
+tracing             = { workspace = true }

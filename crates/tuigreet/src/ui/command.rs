@@ -21,12 +21,12 @@ pub fn draw_with_area(
   f: &mut Frame,
   area: Rect,
 ) -> Result<(u16, u16), Box<dyn Error>> {
-  let theme = &greeter.theme;
+  let theme = &greeter.themeui;
 
   let size = area;
   let (x, y, width, height) = get_rect_bounds(greeter, size, 0);
 
-  let container_padding = greeter.container_padding();
+  let container_padding = greeter.layout.container_padding;
 
   let container = Rect::new(x, y, width, height);
   let frame = Rect::new(
