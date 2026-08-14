@@ -1,4 +1,9 @@
-use serde::{Deserialize, Serialize};
+use serde::{
+  Deserialize,
+  Deserializer,
+  Serialize,
+  de::{self, Visitor},
+};
 
 /// Root configuration structure
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
@@ -184,6 +189,14 @@ pub struct SessionConfig {
   /// Environment variables for default session
   #[serde(default)]
   pub environments: Vec<String>,
+
+  /// KMSCON session handoff mode.
+  #[serde(default)]
+  pub kmscon: KmsconMode,
+
+  /// Command used to hand graphical sessions off from kmscon.
+  #[serde(default = "default_kmscon_launcher")]
+  pub kmscon_launcher: String,
 }
 
 impl Default for SessionConfig {
@@ -195,7 +208,68 @@ impl Default for SessionConfig {
       session_wrapper:  None,
       xsession_wrapper: default_xsession_wrapper(),
       environments:     Vec::new(),
+      kmscon:           KmsconMode::Auto,
+      kmscon_launcher:  default_kmscon_launcher(),
     }
+  }
+}
+
+/// KMSCON support mode.
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum KmsconMode {
+  Disabled,
+  #[default]
+  Auto,
+  Enabled,
+}
+
+impl<'de> Deserialize<'de> for KmsconMode {
+  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    struct KmsconModeVisitor;
+
+    impl Visitor<'_> for KmsconModeVisitor {
+      type Value = KmsconMode;
+
+      fn expecting(
+        &self,
+        formatter: &mut std::fmt::Formatter<'_>,
+      ) -> std::fmt::Result {
+        formatter.write_str("a boolean or one of: auto, enabled, disabled")
+      }
+
+      fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E>
+      where
+        E: de::Error,
+      {
+        Ok(if value {
+          KmsconMode::Enabled
+        } else {
+          KmsconMode::Disabled
+        })
+      }
+
+      fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+      where
+        E: de::Error,
+      {
+        match value {
+          "auto" => Ok(KmsconMode::Auto),
+          "enabled" | "true" => Ok(KmsconMode::Enabled),
+          "disabled" | "false" => Ok(KmsconMode::Disabled),
+          _ => {
+            Err(E::unknown_variant(value, &[
+              "auto", "enabled", "disabled", "true", "false",
+            ]))
+          },
+        }
+      }
+    }
+
+    deserializer.deserialize_any(KmsconModeVisitor)
   }
 }
 
@@ -661,6 +735,10 @@ fn default_xsessions_dirs() -> Vec<String> {
 
 fn default_xsession_wrapper() -> Option<String> {
   Some("startx /usr/bin/env".to_string())
+}
+
+fn default_kmscon_launcher() -> String {
+  "kmscon-launch-gui".to_string()
 }
 
 const fn default_min_uid() -> u32 {

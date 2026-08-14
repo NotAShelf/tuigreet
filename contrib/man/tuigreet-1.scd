@@ -35,6 +35,18 @@ tuigreet - A graphical console greeter for greetd
 	Specify a wrapper command to execute instead of the session for non-X11
 	sessions. This command will receive the session command as its arguments.
 
+*--kmscon*
+	Force KMSCON session handoff. Graphical sessions are launched through
+	*kmscon-launch-gui* so KMSCON can release DRM master before the compositor or
+	X server starts.
+
+*--no-kmscon*
+	Disable KMSCON auto-detection and session handoff.
+
+*--kmscon-launcher 'CMD [ARGS]...'*
+	Override the command used by KMSCON handoff. The default is
+	*kmscon-launch-gui*.
+
 *-x, --xsessions DIR1[:DIR2]...*
 	Location of desktop-files to be used as X11 session definitions. By
 	default, X11 sessions are fetched from */usr/share/xsessions*.

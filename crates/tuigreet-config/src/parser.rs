@@ -15,6 +15,7 @@ use crate::{
   AlignGreeting,
   Config,
   ConfigError,
+  KmsconMode,
   SecretMode,
   env::load_env_variables,
 };
@@ -96,6 +97,12 @@ fn apply_config_layer(dest: &mut Config, src: Config) {
   }
   if src.session.environments != defaults.session.environments {
     dest.session.environments = src.session.environments;
+  }
+  if src.session.kmscon != defaults.session.kmscon {
+    dest.session.kmscon = src.session.kmscon;
+  }
+  if src.session.kmscon_launcher != defaults.session.kmscon_launcher {
+    dest.session.kmscon_launcher = src.session.kmscon_launcher;
   }
 
   // Display
@@ -597,6 +604,15 @@ pub fn extract_cli_config(matches: &getopts::Matches) -> Config {
   if let Some(wrapper) = matches.opt_str("session-wrapper") {
     config.session.session_wrapper = Some(wrapper);
   }
+  if matches.opt_present("kmscon") {
+    config.session.kmscon = KmsconMode::Enabled;
+  }
+  if matches.opt_present("no-kmscon") {
+    config.session.kmscon = KmsconMode::Disabled;
+  }
+  if let Some(launcher) = matches.opt_str("kmscon-launcher") {
+    config.session.kmscon_launcher = launcher;
+  }
   if !matches.opt_present("no-xsession-wrapper")
     && let Some(wrapper) = matches.opt_str("xsession-wrapper")
   {
@@ -826,6 +842,19 @@ impl Config {
       if let Some(ref wrapper) = self.session.xsession_wrapper {
         self.validate_wrapper_command(wrapper)?;
       }
+      if self.session.kmscon == KmsconMode::Enabled {
+        self.validate_wrapper_command(&self.session.kmscon_launcher)?;
+      }
+    }
+
+    if self.session.kmscon != KmsconMode::Disabled
+      && self.session.kmscon_launcher.trim().is_empty()
+    {
+      return Err(ConfigError::Validation(
+        "session.kmscon_launcher must not be empty when KMSCON support is \
+         enabled or auto-detected"
+          .to_string(),
+      ));
     }
 
     // Validate [[outputs]] entries
@@ -1230,6 +1259,33 @@ command = "test"
       partial_config.session.sessions_dirs,
       "Default and partially deserialized sessions_dirs should match"
     );
+  }
+
+  #[test]
+  fn test_session_kmscon_modes_parse() {
+    let auto_config: Config =
+      toml::from_str("[session]\nkmscon = \"auto\"\n").unwrap();
+    assert_eq!(auto_config.session.kmscon, KmsconMode::Auto);
+
+    let enabled_config: Config =
+      toml::from_str("[session]\nkmscon = true\n").unwrap();
+    assert_eq!(enabled_config.session.kmscon, KmsconMode::Enabled);
+
+    let disabled_config: Config =
+      toml::from_str("[session]\nkmscon = \"disabled\"\n").unwrap();
+    assert_eq!(disabled_config.session.kmscon, KmsconMode::Disabled);
+  }
+
+  #[test]
+  fn test_kmscon_empty_launcher_is_error() {
+    let config: Config = toml::from_str(
+      "[session]\nkmscon = \"enabled\"\nkmscon_launcher = \"\"\n",
+    )
+    .unwrap();
+    assert!(matches!(
+      config.validate(false),
+      Err(ConfigError::Validation(_))
+    ));
   }
 
   #[test]

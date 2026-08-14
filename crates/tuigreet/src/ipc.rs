@@ -346,6 +346,7 @@ fn wrap_session_command<'a>(
   default: &'a DefaultCommand<'a>,
 ) -> (Cow<'a, str>, Vec<String>) {
   let mut env: Vec<String> = vec![];
+  let mut command = Cow::Borrowed(default.command());
 
   match session {
     // If the target is a defined session, we *should* be able to deduce all the
@@ -375,10 +376,10 @@ fn wrap_session_command<'a>(
 
       if *session_type == SessionType::X11 {
         if let Some(ref wrap) = greeter.xsession_wrapper {
-          return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
+          command = Cow::Owned(format!("{} {}", wrap, default.command()));
         }
       } else if let Some(ref wrap) = greeter.session_wrapper {
-        return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
+        command = Cow::Owned(format!("{} {}", wrap, default.command()));
       }
     },
 
@@ -386,21 +387,35 @@ fn wrap_session_command<'a>(
       // If a wrapper script is used, assume that it is able to set up the
       // required environment.
       if let Some(ref wrap) = greeter.session_wrapper {
-        return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
-      }
-      // Otherwise, set up the environment from the provided argument.
-      if let Some(base_env) = default.env() {
+        command = Cow::Owned(format!("{} {}", wrap, default.command()));
+      } else if let Some(base_env) = default.env() {
         env.append(&mut base_env.clone());
       }
     },
   }
 
-  (Cow::Borrowed(default.command()), env)
+  let should_handoff_from_kmscon = match session {
+    Some(session) => {
+      matches!(
+        session.session_type,
+        SessionType::X11 | SessionType::Wayland
+      )
+    },
+    None => true,
+  };
+
+  if greeter.kmscon_enabled() && should_handoff_from_kmscon {
+    command = Cow::Owned(format!("{} {}", greeter.kmscon_launcher, command));
+  }
+
+  (command, env)
 }
 
 #[cfg(test)]
 mod test {
   use std::path::PathBuf;
+
+  use tuigreet_config::KmsconMode;
 
   use super::wrap_session_command;
   use crate::{
@@ -475,6 +490,67 @@ mod test {
       "XDG_SESSION_TYPE=x11",
       "XDG_CURRENT_DESKTOP=one:two:three"
     ]);
+  }
+
+  #[test]
+  fn kmscon_wraps_wayland_session_after_session_wrapper() {
+    let mut greeter = Greeter::default();
+    greeter.kmscon = KmsconMode::Enabled;
+    greeter.session_wrapper = Some("systemd-cat -t greeter".into());
+
+    let session = Session {
+      name: "Session1".into(),
+      session_type: SessionType::Wayland,
+      command: "sway".into(),
+      path: Some(PathBuf::from("/Session1Path")),
+      ..Default::default()
+    };
+
+    let default = DefaultCommand(&session.command, None);
+    let (command, env) =
+      wrap_session_command(&greeter, Some(&session), &default);
+
+    assert_eq!(
+      command.as_ref(),
+      "kmscon-launch-gui systemd-cat -t greeter sway"
+    );
+    assert_eq!(env, vec!["XDG_SESSION_TYPE=wayland"]);
+  }
+
+  #[test]
+  fn kmscon_wraps_default_command() {
+    let mut greeter = Greeter::default();
+    greeter.kmscon = KmsconMode::Enabled;
+
+    let default = DefaultCommand(
+      "sway",
+      Some(vec!["XDG_SESSION_TYPE=wayland".to_string()]),
+    );
+    let (command, env) = wrap_session_command(&greeter, None, &default);
+
+    assert_eq!(command.as_ref(), "kmscon-launch-gui sway");
+    assert_eq!(env, vec!["XDG_SESSION_TYPE=wayland"]);
+  }
+
+  #[test]
+  fn kmscon_does_not_wrap_tty_session() {
+    let mut greeter = Greeter::default();
+    greeter.kmscon = KmsconMode::Enabled;
+
+    let session = Session {
+      name: "Session1".into(),
+      session_type: SessionType::Tty,
+      command: "bash".into(),
+      path: Some(PathBuf::from("/Session1Path")),
+      ..Default::default()
+    };
+
+    let default = DefaultCommand(&session.command, None);
+    let (command, env) =
+      wrap_session_command(&greeter, Some(&session), &default);
+
+    assert_eq!(command.as_ref(), "bash");
+    assert_eq!(env, vec!["XDG_SESSION_TYPE=tty"]);
   }
 
   #[test]

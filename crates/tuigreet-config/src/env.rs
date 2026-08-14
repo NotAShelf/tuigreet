@@ -2,7 +2,7 @@ use std::env;
 
 use crate::{
   Config,
-  schema::{AlignGreeting, SecretMode, WidgetPosition},
+  schema::{AlignGreeting, KmsconMode, SecretMode, WidgetPosition},
 };
 
 /// Apply environment variable overrides to configuration.
@@ -409,6 +409,33 @@ pub fn load_env_variables() -> Config {
     config.session.xsession_wrapper = Some(value);
   }
 
+  if let Ok(value) = env::var("TUIGREET_KMSCON") {
+    match value.to_lowercase().as_str() {
+      "auto" => config.session.kmscon = KmsconMode::Auto,
+      "enabled" => config.session.kmscon = KmsconMode::Enabled,
+      "disabled" => config.session.kmscon = KmsconMode::Disabled,
+      _ => {
+        if let Ok(kmscon) = parse_bool(&value) {
+          config.session.kmscon = if kmscon {
+            KmsconMode::Enabled
+          } else {
+            KmsconMode::Disabled
+          };
+        } else {
+          tracing::warn!(
+            "Invalid TUIGREET_KMSCON value: '{}', expected \
+             auto/enabled/disabled or true/false",
+            value
+          );
+        }
+      },
+    }
+  }
+
+  if let Ok(value) = env::var("TUIGREET_KMSCON_LAUNCHER") {
+    config.session.kmscon_launcher = value;
+  }
+
   if let Ok(value) = env::var("TUIGREET_ENVIRONMENTS") {
     config.session.environments = value
       .split(':')
@@ -560,6 +587,8 @@ mod tests {
       env::set_var("TUIGREET_THEME", "border=red;text=blue;container=green");
       env::set_var("TUIGREET_SESSIONS_DIRS", "/test:/usr/share");
       env::set_var("TUIGREET_ALIGN_GREETING", "center");
+      env::set_var("TUIGREET_KMSCON", "enabled");
+      env::set_var("TUIGREET_KMSCON_LAUNCHER", "custom-launcher");
     }
 
     let config = load_env_variables();
@@ -575,11 +604,15 @@ mod tests {
       "/usr/share".to_string()
     ]);
     assert_eq!(config.display.align_greeting, AlignGreeting::Center);
+    assert_eq!(config.session.kmscon, KmsconMode::Enabled);
+    assert_eq!(config.session.kmscon_launcher, "custom-launcher");
 
     unsafe {
       env::remove_var("TUIGREET_THEME");
       env::remove_var("TUIGREET_SESSIONS_DIRS");
       env::remove_var("TUIGREET_ALIGN_GREETING");
+      env::remove_var("TUIGREET_KMSCON");
+      env::remove_var("TUIGREET_KMSCON_LAUNCHER");
     }
   }
 }
