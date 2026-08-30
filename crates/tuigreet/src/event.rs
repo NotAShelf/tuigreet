@@ -106,9 +106,17 @@ impl Events {
 
           tokio::select! {
             event = event => {
-              if let Some(Ok(TermEvent::Key(event))) = event {
-                let _ = tx.send(Event::Key(event)).await;
-                let _ = tx.send(Event::Render).await;
+              if let Some(Ok(term_event)) = event {
+                match term_event {
+                  TermEvent::Key(event) => {
+                    let _ = tx.send(Event::Key(event)).await;
+                    let _ = tx.send(Event::Render).await;
+                  }
+                  TermEvent::Resize(_, _) => {
+                    let _ = tx.send(Event::Render).await;
+                  }
+                  _ => {}
+                }
               }
             }
 
