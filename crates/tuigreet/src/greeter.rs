@@ -878,6 +878,33 @@ impl Greeter {
        0.30,1.10)",
       "MIN,MAX",
     );
+    opts.optopt(
+      "",
+      "fireworks-scale",
+      "fireworks height and size scales as HEIGHT,SIZE (default: 1.0,1.0)",
+      "HEIGHT,SIZE",
+    );
+    opts.optopt(
+      "",
+      "fireworks-speed",
+      "fireworks speed multipliers as LAUNCH,CLIMB,DECAY,EXPLOSION (default: \
+       1.0,1.0,1.0,1.0)",
+      "LAUNCH,CLIMB,DECAY,EXPLOSION",
+    );
+    opts.optopt(
+      "",
+      "fireworks-spark-chars",
+      "fireworks spark characters from brightest to dimmest (default: \
+       '█▓▒░. ')",
+      "CHARS",
+    );
+    opts.optopt(
+      "",
+      "fireworks-env",
+      "fireworks params as MAX_PARTICLES,GRAVITY,DRAG \
+       (default: 2000,1.0,0.96)",
+      "MAX_PARTICLES,GRAVITY,DRAG",
+    );
 
     opts
   }
@@ -1180,7 +1207,7 @@ impl Greeter {
     &mut self,
     cfg: &tuigreet_config::BackgroundConfig,
   ) {
-    use crate::ui::bg_animation::{Kind, doom, matrix};
+    use crate::ui::bg_animation::{Kind, doom, matrix, fireworks};
 
     let Some(kind) = cfg.kind.as_deref().and_then(Kind::from_name) else {
       if let Some(name) = cfg.kind.as_deref()
@@ -1226,6 +1253,39 @@ impl Greeter {
           min_speed:     cfg.matrix.min_speed.unwrap_or(d.min_speed),
           max_speed:     cfg.matrix.max_speed.unwrap_or(d.max_speed),
           mutate_chance: cfg.matrix.mutate_chance.unwrap_or(d.mutate_chance),
+        })
+      },
+      Kind::Fireworks => {
+        let d = fireworks::Options::default();
+        let spark_chars = cfg.fireworks.spark_chars.as_ref()
+          .map(|s| s.chars().collect::<Vec<_>>())
+          .filter(|v| !v.is_empty())
+          .unwrap_or(d.spark_chars);
+        let palettes = cfg.fireworks.palettes.as_ref()
+          .and_then(|entries| {
+            let parsed: Vec<_> = entries.iter()
+              .filter_map(|entry| {
+                let colors: Vec<_> = entry.colors.iter()
+                  .filter_map(|c| bg_animation::parse_color(c))
+                  .collect();
+                (!colors.is_empty()).then(|| (entry.weight, colors))
+              })
+              .collect();
+            (!parsed.is_empty()).then(|| parsed)
+          })
+          .unwrap_or(d.palettes);
+        AnimationSpec::Fireworks(fireworks::Options {
+          max_particles:   cfg.fireworks.max_particles.unwrap_or(d.max_particles),
+          gravity:         cfg.fireworks.gravity.unwrap_or(d.gravity),
+          launch_freq:     cfg.fireworks.launch_freq.unwrap_or(d.launch_freq),
+          height_scale:    cfg.fireworks.height_scale.unwrap_or(d.height_scale),
+          size_scale:      cfg.fireworks.size_scale.unwrap_or(d.size_scale),
+          climb_speed:     cfg.fireworks.climb_speed.unwrap_or(d.climb_speed),
+          decay_speed:    cfg.fireworks.decay_speed.unwrap_or(d.decay_speed),
+          explosion_speed: cfg.fireworks.explosion_speed.unwrap_or(d.explosion_speed),
+          spark_drag:     cfg.fireworks.spark_drag.unwrap_or(d.spark_drag),
+          spark_chars,
+          palettes,
         })
       },
     };

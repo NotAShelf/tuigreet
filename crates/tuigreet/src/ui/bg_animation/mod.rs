@@ -2,6 +2,7 @@
 
 pub mod doom;
 pub mod matrix;
+pub mod fireworks;
 
 use std::str::FromStr;
 
@@ -24,6 +25,7 @@ pub trait Animation: Send + Sync {
 pub enum Kind {
   Doom,
   Matrix,
+  Fireworks,
 }
 
 /// Catalog entry for a registered animation kind.
@@ -46,6 +48,11 @@ pub const KINDS: &[KindInfo] = &[
     name:  "matrix",
     label: "Matrix",
   },
+  KindInfo {
+    kind:  Kind::Fireworks,
+    name:  "fireworks",
+    label: "Fireworks",
+  },
 ];
 
 impl Kind {
@@ -54,6 +61,7 @@ impl Kind {
     match name.trim().to_ascii_lowercase().as_str() {
       "doom" | "fire" => Some(Self::Doom),
       "matrix" | "cmatrix" => Some(Self::Matrix),
+      "fireworks" | "hanabi" => Some(Self::Fireworks),
       _ => None,
     }
   }
@@ -64,6 +72,7 @@ impl Kind {
 pub enum AnimationSpec {
   Doom(doom::Options),
   Matrix(matrix::Options),
+  Fireworks(fireworks::Options),
 }
 
 /// Construct an animation matching `spec`'s variant.
@@ -71,6 +80,7 @@ pub fn build(spec: &AnimationSpec) -> Box<dyn Animation> {
   match spec {
     AnimationSpec::Doom(opts) => Box::new(doom::Doom::new(opts.clone())),
     AnimationSpec::Matrix(opts) => Box::new(matrix::Matrix::new(opts.clone())),
+    AnimationSpec::Fireworks(opts) => Box::new(fireworks::Fireworks::new(opts.clone())),
   }
 }
 
@@ -81,6 +91,7 @@ impl Kind {
     match self {
       Self::Doom => AnimationSpec::Doom(doom::Options::default()),
       Self::Matrix => AnimationSpec::Matrix(matrix::Options::default()),
+      Self::Fireworks => AnimationSpec::Fireworks(fireworks::Options::default()),
     }
   }
 }
@@ -140,5 +151,7 @@ mod tests {
     assert_eq!(Kind::from_name(""), None);
     assert_eq!(Kind::from_name("matrix"), Some(Kind::Matrix));
     assert_eq!(Kind::from_name("CMATRIX"), Some(Kind::Matrix));
+    assert_eq!(Kind::from_name("fireworks"), Some(Kind::Fireworks));
+    assert_eq!(Kind::from_name("hanabi"), Some(Kind::Fireworks));
   }
 }
